@@ -1,5 +1,5 @@
-# IDE's project files
-.idea
+# Test directories
+coverage/
 
 # MacOS
 .DS_Store
@@ -20,9 +20,6 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
-
-# Test directories
-coverage/
 
 # Miscellaneous
 *.swp
