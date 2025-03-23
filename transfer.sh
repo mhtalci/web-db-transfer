@@ -34,7 +34,7 @@ YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 RESET='\033[0m'  # To reset to default color
 
-echo -e  "${GREEN}#=== Starting website copy from $SRCHOST to $DSTHOST...${RESET}"
+echo -e "${GREEN}#=== Starting website copy from $SRCHOST to $DSTHOST...${RESET}"
 
 # Step 1: Rsync files from source to destination/local
 if [ "$DSTHOST" = "localhost" ] || [ "$DSTHOST" = "127.0.0.1" ]; then
@@ -51,9 +51,9 @@ else
 fi
 
 if [ $? -eq 0 ]; then
-    echo -e  "${GREEN}#=== Files copied successfully to $DSTHOME${RESET}"
+    echo -e "${GREEN}#=== Files copied successfully to $DSTHOME${RESET}"
 else
-    echo -e  "${RED}#===Error copying files${RESET}" >&2
+    echo -e "${RED}#===Error copying files${RESET}" >&2
     exit 1
 fi
 
@@ -88,7 +88,7 @@ else
 fi
 
 # Step 4: Restore database on destination/local
-echo -e  "${YELLOW}#=== Restoring database on destination...${RESET}"
+echo -e "${YELLOW}#=== Restoring database on destination...${RESET}"
 if [ "$DSTHOST" = "localhost" ] || [ "$DSTHOST" = "127.0.0.1" ]; then
     # Local restore without SSH
     mysql -u $DSTDBUSER -p"$DSTDBPASS" $DSTDBNAME < $DSTHOME/${DB_DUMP_NAME}
@@ -98,26 +98,26 @@ else
 fi
 
 # Clean up dump files if needed
-echo -e  "${RED}#=== $DB_DUMP_REMOVE | REMOVE DUMP db(${DB_DUMP_NAME})${RESET}"
+echo -e "${RED}#=== $DB_DUMP_REMOVE | REMOVE DUMP db(${DB_DUMP_NAME})${RESET}"
 if [ "$DB_DUMP_REMOVE" = true ]; then
     if [ "$DSTHOST" = "localhost" ] || [ "$DSTHOST" = "127.0.0.1" ]; then
         # Local removal on destination
         rm $DSTHOME/${DB_DUMP_NAME}
-        echo -e  "${RED}#=== REMOVED dump (${DB_DUMP_NAME})@$DSTHOST${RESET}"
+        echo -e "${RED}#=== REMOVED dump (${DB_DUMP_NAME})@$DSTHOST${RESET}"
     else
         # Remote removal on destination
         ssh -p $DSTSSHPORT $DSTUSER@$DSTHOST "rm $DSTHOME/${DB_DUMP_NAME}"
-        echo -e  "${RED}#=== REMOVED dump (${DB_DUMP_NAME})@$DSTHOST${RESET}"
+        echo -e "${RED}#=== REMOVED dump (${DB_DUMP_NAME})@$DSTHOST${RESET}"
     fi
 
     if [ "$SRCHOST" = "localhost" ] || [ "$SRCHOST" = "127.0.0.1" ]; then
         # Local removal on source
         rm $SRCHOME/${DB_DUMP_NAME}
-        echo -e  "${RED}#=== REMOVED dump (${DB_DUMP_NAME})@$SRCHOST${RESET}"
+        echo -e "${RED}#=== REMOVED dump (${DB_DUMP_NAME})@$SRCHOST${RESET}"
     else
         # Remote removal on source
         ssh -p $SRCSSHPORT $SRCUSER@$SRCHOST "rm $SRCHOME/${DB_DUMP_NAME}"
-        echo -e  "${RED}#=== REMOVED dump (${DB_DUMP_NAME})@$SRCHOST${RESET}"
+        echo -e "${RED}#=== REMOVED dump (${DB_DUMP_NAME})@$SRCHOST${RESET}"
     fi
 fi
 
@@ -126,4 +126,4 @@ end_time=$(date +%s)
 # Calculate duration
 duration=$((end_time - start_time))
 
-echo -e  "${GREEN}#=== Website and database copy completed successfully in $duration seconds.${RESET}"
+echo -e "${GREEN}#=== Website and database copy completed successfully in $duration seconds.${RESET}"
