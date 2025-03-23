@@ -126,4 +126,4 @@ end_time=$(date +%s)
 # Calculate duration
 duration=$((end_time - start_time))
 
-echo -e  "${GREEN}#=== Website and database copy completed successfully in in $duration seconds.${RESET}"
+echo -e  "${GREEN}#=== Website and database copy completed successfully in $duration seconds.${RESET}"
