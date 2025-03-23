@@ -4,8 +4,8 @@ SRCSSHPORT=22
 SRCUSER=sshuser1
 SRCDBNAME="dbname_db"
 SRCDBUSER="dbuser_db"
-SRCHOME=/home/sshuser1/public_html
 SRCDBPASS='S3CR3TPAssW0rd'
+SRCHOME=/home/sshuser1/public_html
 
 ##### DESTINATION
 DSTHOST=localhost
