@@ -22,8 +22,10 @@ DB_DUMP_REMOVE=false
 
 ##### CREATE a timestamp
 TIMESTAMP=$(date +"%A, %B %d, %Y %I:%M:%S %p")
-
 echo $TIMESTAMP
+
+# Start time
+start_time=$(date +%s)
 
 # Define color codes
 RED='\033[0;31m'
@@ -119,4 +121,9 @@ if [ "$DB_DUMP_REMOVE" = true ]; then
     fi
 fi
 
-echo -e  "${GREEN}#=== Website and database copy completed successfully.${RESET}"
+# End time
+end_time=$(date +%s)
+# Calculate duration
+duration=$((end_time - start_time))
+
+echo -e  "${GREEN}#=== Website and database copy completed successfully in in $duration seconds.${RESET}"
