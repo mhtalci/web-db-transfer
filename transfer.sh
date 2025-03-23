@@ -88,13 +88,8 @@ fi
 # Step 4: Restore database on destination/local
 echo -e  "${YELLOW}#=== Restoring database on destination...${RESET}"
 if [ "$DSTHOST" = "localhost" ] || [ "$DSTHOST" = "127.0.0.1" ]; then
-    if [ "$SRCHOST" = "localhost" ] || [ "$SRCHOST" = "127.0.0.1" ]; then
-        # Local restore without SSH
-        mysql -u $DSTDBUSER -p"$DSTDBPASS" $DSTDBNAME < $DSTHOME/${DB_DUMP_NAME}
-    else
-        # Remote source, local destination (using SSH for remote source)
-        ssh -p $SRCSSHPORT $SRCUSER@$SRCHOST "mysql -u $DSTDBUSER -p\"$DSTDBPASS\" $DSTDBNAME < $SRCHOME/${DB_DUMP_NAME}"
-    fi
+    # Local restore without SSH
+    mysql -u $DSTDBUSER -p"$DSTDBPASS" $DSTDBNAME < $DSTHOME/${DB_DUMP_NAME}
 else
     # Remote restore with SSH (both source and destination are remote)
     ssh -p $DSTSSHPORT $DSTUSER@$DSTHOST "mysql -u $DSTDBUSER -p\"$DSTDBPASS\" $DSTDBNAME < $DSTHOME/${DB_DUMP_NAME}"
