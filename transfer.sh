@@ -20,6 +20,9 @@ DSTHOME=/home/sshuser2/public_html
 DB_DUMP_NAME="db_backupdump.sql"
 DB_DUMP_REMOVE=false
 
+##### EXCLUDED FILES/DIR (optional)
+EXCLUDE_FILES="*.log *.tmp *temp /path/to/exclude/dir"
+
 ##### CREATE a timestamp
 TIMESTAMP=$(date +"%A, %B %d, %Y %I:%M:%S %p")
 echo $TIMESTAMP
@@ -37,17 +40,23 @@ RESET='\033[0m'  # To reset to default color
 echo -e "${GREEN}#=== Starting website copy from $SRCHOST to $DSTHOST...${RESET}"
 
 # Step 1: Rsync files from source to destination/local
+RSYNC_EXCLUDE_OPTION=""
+if [ -n "$EXCLUDE_FILES" ]; then
+    for exclude in $EXCLUDE_FILES; do
+        RSYNC_EXCLUDE_OPTION="$RSYNC_EXCLUDE_OPTION --exclude=$exclude"
+    done
+fi
 if [ "$DSTHOST" = "localhost" ] || [ "$DSTHOST" = "127.0.0.1" ]; then
     if [ "$SRCHOST" = "localhost" ] || [ "$SRCHOST" = "127.0.0.1" ]; then
        # Local copy without SSH
-       rsync -az --info=progress2 --stats $SRCHOME/ $DSTHOME/
+       rsync -az --info=progress2 --stats $RSYNC_EXCLUDE_OPTION $SRCHOME/ $DSTHOME/
     else
        # Remote copy with SSH
-       rsync -az --info=progress2 --stats -e "ssh -p $SRCSSHPORT" $SRCUSER@$SRCHOST:$SRCHOME/ $DSTHOME/
+       rsync -az --info=progress2 --stats -e "ssh -p $SRCSSHPORT" $RSYNC_EXCLUDE_OPTION $SRCUSER@$SRCHOST:$SRCHOME/ $DSTHOME/
     fi
 else
     # Remote copy with SSH on remote dest
-    rsync -az --info=progress2 --stats -e "ssh -p $SRCSSHPORT" $SRCUSER@$SRCHOST:$SRCHOME/ $DSTUSER@$DSTHOST:$DSTHOME/
+    rsync -az --info=progress2 --stats -e "ssh -p $SRCSSHPORT" $RSYNC_EXCLUDE_OPTION $SRCUSER@$SRCHOST:$SRCHOME/ $DSTUSER@$DSTHOST:$DSTHOME/
 fi
 
 if [ $? -eq 0 ]; then
