@@ -12,7 +12,7 @@ DSTHOST=localhost
 DSTSSHPORT=22
 DSTUSER="sshuser2"
 DSTDBNAME="dbname_db"
-DSTDBUSER="dbname_db"
+DSTDBUSER="dbuser_db"
 DSTDBPASS='S3CR3TPAssW0rd'
 DSTHOME=/home/sshuser2/public_html
 
