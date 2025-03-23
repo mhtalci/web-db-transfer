@@ -101,8 +101,8 @@ else
 fi
 
 # Clean up dump files if needed
-echo -e  "${RED}#=== $REMOVEDB_DUMP | REMOVE DUMP db(${DB_DUMP_NAME})${RESET}"
-if [ "$REMOVEDB_DUMP" = true ]; then
+echo -e  "${RED}#=== $DB_DUMP_REMOVE | REMOVE DUMP db(${DB_DUMP_NAME})${RESET}"
+if [ "$DB_DUMP_REMOVE" = true ]; then
     if [ "$DSTHOST" = "localhost" ] || [ "$DSTHOST" = "127.0.0.1" ]; then
         # Local removal on destination
         rm $DSTHOME/${DB_DUMP_NAME}
