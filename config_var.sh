@@ -19,12 +19,12 @@ DSTDBPASS='S3CR3TPAssW0rd'    # Password for the destination database
 #####
 
 # Base directory where the directories reside on the source host
-SRCHOME="/home/sshuser1/"
+SRCHOME="/home/sshuser1"
 # Additional directories to copy inside SRCHOME (directories to be copied)
 SRCHOME_DIRS=("public_html" "App" "New_folder")
 
 # Base directory where the directories reside on the destination host
-DSTHOME="/home/sshuser2/"
+DSTHOME="/home/sshuser2"
 # Additional directories to copy inside DSTHOME (directories to be copied)
 DSTHOME_DIRS=("public_html" "App" "New_folder")
 
