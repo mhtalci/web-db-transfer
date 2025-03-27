@@ -55,56 +55,10 @@ If you have stored your SSH key in a different location, you can specify the key
 ```bash
 rsync -az --info=progress2 --stats -e "ssh -i /path/to/your/private_key -p $SRCSSHPORT" $SRCUSER@$SRCHOST:$SRCHOME/ $DSTUSER@$DSTHOST:$DSTHOME/
 ```
-
 This will allow you to use a custom private key file for the transfer.
 
-## How to Use the Script:
-- Clone or download the repository to your local machine.
-- Update the variables in the script (SRCHOST, DSTHOST, SRCUSER, DSTUSER, etc.) with the correct server details.
-- Make the script executable:
-```bash
- chmod +x transfer.sh
-```
-This will:
-- Copy website files from the source server to the destination server using rsync.
-- Dump the source database and transfer the dump to the destination server.
-- Restore the database on the destination server.
-The script uses SSH keys for secure, password-less authentication.
 
-## Example Configuration
-
-In this example, the script is set to transfer files and databases from a source server (srv.example.com) to a local destination (localhost).
-
-### Source Server Configuration:
-```bash
-##### SOURCE
-SRCHOST=srv.example.com
-SRCSSHPORT=22
-SRCUSER=sshuser1
-SRCDBNAME="dbname_db"
-SRCDBUSER="dbuser_db"
-SRCHOME=/home/sshuser1/public_html
-SRCDBPASS='S3CR3TPAssW0rd'
-```
-### Destination Server Configuration:
-```bash
-##### DESTINATION
-DSTHOST=localhost
-DSTSSHPORT=22
-DSTUSER="sshuser2"
-DSTDBNAME="dbname_db"
-DSTDBUSER="dbname_db"
-DSTHOME=/home/sshuser2/public_html
-DSTDBPASS='S3CR3TPAssW0rd'
-```
-### Options:
-```bash
-##### OPTIONS
-DB_DUMP_NAME="db_backupdump.sql"
-DB_DUMP_REMOVE=false
-```
-
-Once you have configured the variables above in the script, you can run it as follows:
+### Once you have configured the variables above in the script, you can run it as follows:
 ```bash
 bash transfer.sh
 ```
