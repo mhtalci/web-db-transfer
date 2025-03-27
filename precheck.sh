@@ -16,73 +16,97 @@ check_var() {
     fi
 }
 
-# Check required variables
+# Function to check MySQL database connection
+check_mysql_connection() {
+    local host=$1
+    local port=$2
+    local user=$3
+    local password=$4
+    local dbname=$5
+    
+    # Check source MySQL connection
+    if [ "$host" = "localhost" ] || [ "$host" = "127.0.0.1" ]; then
+        # Local MySQL check without SSH
+        mysql -u "$user" -p"$password" -e "exit" 2>/dev/null
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}#=== ERROR: Cannot connect to MySQL database $dbname on $host!${RESET}" >&2
+            exit 1
+        fi
+    else
+        # Remote MySQL check with SSH
+        ssh -p "$port" "$SRCUSER@$host" "mysql -u \"$user\" -p\"$password\" -e \"exit\"" 2>/dev/null
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}#=== ERROR: Cannot connect to MySQL database $dbname on $host via SSH!${RESET}" >&2
+            exit 1
+        fi
+    fi
+}
+
+# Function to check SSH connection
+check_ssh_connection() {
+    local host=$1
+    local port=$2
+    local user=$3
+    
+    # Skip SSH check for local host
+    if [ "$host" = "localhost" ] || [ "$host" = "127.0.0.1" ]; then
+        echo -e "${YELLOW}#=== Skipping SSH check for local host $host...${RESET}"
+        return 0  # Local host doesn't need SSH check
+    else
+        # SSH check for remote host
+        echo -e "${YELLOW}#=== Checking SSH connection to remote host $host on port $port...${RESET}"
+        ssh -p "$port" "$user@$host" "exit" 2>/dev/null
+    fi
+
+    # Check SSH connection result
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}#=== ERROR: Cannot connect via SSH to $user@$host:$port!${RESET}" >&2
+        exit 1
+    fi
+}
+
+# Load configuration(vars) from config_vars.sh
+source ./config_vars.sh
+
+# Check required variables from config_vars.sh
 check_var "SRCHOST" "$SRCHOST"
 check_var "SRCSSHPORT" "$SRCSSHPORT"
 check_var "SRCUSER" "$SRCUSER"
 check_var "SRCDBNAME" "$SRCDBNAME"
 check_var "SRCDBUSER" "$SRCDBUSER"
 check_var "SRCDBPASS" "$SRCDBPASS"
+check_var "SRCHOME" "$SRCHOME"
 check_var "DSTHOST" "$DSTHOST"
 check_var "DSTSSHPORT" "$DSTSSHPORT"
 check_var "DSTUSER" "$DSTUSER"
 check_var "DSTDBNAME" "$DSTDBNAME"
 check_var "DSTDBUSER" "$DSTDBUSER"
 check_var "DSTDBPASS" "$DSTDBPASS"
+check_var "DSTHOME" "$DSTHOME"
+check_var "DB_DUMP_NAME" "$DB_DUMP_NAME"
 
 # Check multiple directories
-if [ ${#SRCHOMES[@]} -eq 0 ]; then
+if [ ${#SRCHOME_DIRS[@]} -eq 0 ]; then
     echo -e "${RED}#=== ERROR: SRCHOMES array is empty!${RESET}" >&2
     exit 1
 fi
-if [ ${#DSTHOMES[@]} -eq 0 ]; then
+if [ ${#DSTHOME_DIRS[@]} -eq 0 ]; then
     echo -e "${RED}#=== ERROR: DSTHOMES array is empty!${RESET}" >&2
     exit 1
 fi
 
-# Check database connection
-if [ "$DSTHOST" = "localhost" ] || [ "$DSTHOST" = "127.0.0.1" ]; then
-    if [ "$SRCHOST" = "localhost" ] || [ "$SRCHOST" = "127.0.0.1" ]; then
-        # Local MySQL check without SSH
-        mysql -u "$SRCDBUSER" -p"$SRCDBPASS" -e "exit" 2>/dev/null
-        if [ $? -ne 0 ]; then
-            echo -e "${RED}#=== ERROR: Cannot connect to source database!${RESET}" >&2
-            exit 1
-        fi
-    else
-        # Remote MySQL check with SSH
-        ssh -p "$SRCSSHPORT" "$SRCUSER@$SRCHOST" "mysql -u \"$SRCDBUSER\" -p\"$SRCDBPASS\" -e \"exit\"" 2>/dev/null
-        if [ $? -ne 0 ]; then
-            echo -e "${RED}#=== ERROR: Cannot connect to source database via SSH!${RESET}" >&2
-            exit 1
-        fi
-    fi
-else
-    # Remote MySQL check with SSH (from remote to remote)
-    ssh -p "$SRCSSHPORT" "$SRCUSER@$SRCHOST" "mysql -u \"$SRCDBUSER\" -p\"$SRCDBPASS\" -e \"exit\"" 2>/dev/null
-    if [ $? -ne 0 ]; then
-        echo -e "${RED}#=== ERROR: Cannot connect to source database via SSH!${RESET}" >&2
-        exit 1
-    fi
-fi
+# Check source MySQL database connectivity
+echo -e "${YELLOW}#=== Checking source MySQL database connectivity...${RESET}"
+check_mysql_connection "$SRCHOST" "$SRCSSHPORT" "$SRCDBUSER" "$SRCDBPASS" "$SRCDBNAME"
 
-if [ "$DSTHOST" = "localhost" ] || [ "$DSTHOST" = "127.0.0.1" ]; then
-    # Local MySQL check without SSH
-    mysql -u "$DSTDBUSER" -p"$DSTDBPASS" -e "exit" 2>/dev/null
-    if [ $? -ne 0 ]; then
-        echo -e "${RED}#=== ERROR: Cannot connect to destination database!${RESET}" >&2
-        exit 1
-    fi
-else
-    # Remote MySQL check with SSH
-    ssh -p "$DSTSSHPORT" "$DSTUSER@$DSTHOST" "mysql -u \"$DSTDBUSER\" -p\"$DSTDBPASS\" -e \"exit\"" 2>/dev/null
-    if [ $? -ne 0 ]; then
-        echo -e "${RED}#=== ERROR: Cannot connect to destination database via SSH!${RESET}" >&2
-        exit 1
-    fi
-fi
+# Check destination MySQL database connectivity
+echo -e "${YELLOW}#=== Checking destination MySQL database connectivity...${RESET}"
+check_mysql_connection "$DSTHOST" "$DSTSSHPORT" "$DSTDBUSER" "$DSTDBPASS" "$DSTDBNAME"
+
+# Example: Check SSH connection for the source host
+check_ssh_connection "$SRCHOST" "$SRCSSHPORT" "$SRCUSER"
+
+# Example: Check SSH connection for the destination host
+check_ssh_connection "$DSTHOST" "$DSTSSHPORT" "$DSTUSER"
 
 echo -e "${GREEN}#=== Precheck completed successfully!${RESET}"
-
-# Added newlines
-echo -e "\n\n"
