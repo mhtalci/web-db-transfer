@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Source the config file to include the variables
-source ./config.sh
+source ./config_var.sh
 
 # Now, you can use the variables from config.sh in your transfer.sh script
 echo "Starting transfer from $SRCHOST to $DSTHOST..."
