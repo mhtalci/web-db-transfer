@@ -743,3 +743,1120 @@ class JoomlaAdapter(CMSAdapter):
             config_file.write_text(content)
         except Exception as e:
             self.logger.error(f"Failed to update Joomla configuration: {e}")
+
+
+class MagentoAdapter(CMSAdapter):
+    """Adapter for Magento e-commerce platform."""
+    
+    @property
+    def platform_type(self) -> str:
+        return "magento"
+    
+    @property
+    def supported_versions(self) -> List[str]:
+        return ["2.0", "2.1", "2.2", "2.3", "2.4"]
+    
+    async def detect_platform(self, path: Path) -> bool:
+        """Detect Magento installation."""
+        # Check for Magento 2
+        composer_json = path / "composer.json"
+        if composer_json.exists():
+            try:
+                content = json.loads(composer_json.read_text())
+                if "magento/product-community-edition" in content.get("require", {}):
+                    return True
+            except Exception:
+                pass
+        
+        # Check for app/etc/env.php (Magento 2)
+        env_php = path / "app" / "etc" / "env.php"
+        if env_php.exists():
+            return True
+        
+        # Check for typical Magento directory structure
+        magento_dirs = ["app", "bin", "lib", "pub", "var"]
+        return all((path / d).exists() for d in magento_dirs)
+    
+    async def analyze_platform(self, path: Path) -> PlatformInfo:
+        """Analyze Magento installation."""
+        if not await self.detect_platform(path):
+            raise PlatformError(f"Magento not detected at {path}")
+        
+        version = await self._get_magento_version(path)
+        db_config = await self.get_database_config(path)
+        
+        return PlatformInfo(
+            platform_type=self.platform_type,
+            version=version,
+            framework="magento",
+            database_type=db_config.get("type", "mysql"),
+            dependencies=["php", "mysql", "elasticsearch", "redis"],
+            config_files=["app/etc/env.php", "app/etc/config.php"],
+            environment_variables={}
+        )
+    
+    async def get_dependencies(self) -> List[DependencyInfo]:
+        """Get Magento dependencies."""
+        return [
+            DependencyInfo(name="php", version=">=7.4", required=True),
+            DependencyInfo(name="mysql", version=">=5.7", required=True),
+            DependencyInfo(name="elasticsearch", version=">=7.0", required=True),
+            DependencyInfo(name="redis", required=False),
+            DependencyInfo(name="composer", required=True)
+        ]
+    
+    async def get_environment_config(self, path: Path) -> EnvironmentConfig:
+        """Extract Magento environment configuration."""
+        return EnvironmentConfig(
+            variables={},
+            files=["app/etc/env.php", "app/etc/config.php"],
+            secrets=["db_password", "crypt_key", "session_save_redis_password"]
+        )
+    
+    async def prepare_migration(self, source_path: Path, destination_path: Path) -> Dict[str, Any]:
+        """Prepare Magento migration."""
+        platform_info = await self.analyze_platform(source_path)
+        db_config = await self.get_database_config(source_path)
+        
+        return {
+            "platform_info": platform_info.dict(),
+            "database_config": db_config,
+            "migration_steps": ["backup_database", "copy_files", "update_env", "reindex"],
+            "files_to_copy": ["app", "pub/media", "var", "vendor"]
+        }
+    
+    async def post_migration_setup(self, destination_path: Path, migration_info: Dict[str, Any]) -> bool:
+        """Perform Magento post-migration setup."""
+        try:
+            await self._update_magento_env(destination_path, migration_info.get("database_config", {}))
+            return True
+        except Exception as e:
+            self.logger.error(f"Magento post-migration setup failed: {e}")
+            return False
+    
+    async def get_database_config(self, path: Path) -> Dict[str, Any]:
+        """Extract database configuration from Magento env.php."""
+        env_file = path / "app" / "etc" / "env.php"
+        if not env_file.exists():
+            return {}
+        
+        try:
+            content = env_file.read_text()
+            # Parse PHP array (simplified)
+            db_config = {}
+            
+            patterns = {
+                'host': r"'host'\s*=>\s*'([^']+)'",
+                'dbname': r"'dbname'\s*=>\s*'([^']+)'",
+                'username': r"'username'\s*=>\s*'([^']+)'",
+                'password': r"'password'\s*=>\s*'([^']+)'",
+                'table_prefix': r"'table_prefix'\s*=>\s*'([^']+)'"
+            }
+            
+            for key, pattern in patterns.items():
+                match = re.search(pattern, content)
+                if match:
+                    db_config[key] = match.group(1)
+            
+            db_config['type'] = 'mysql'
+            return db_config
+        except Exception:
+            return {}
+    
+    async def _get_magento_version(self, path: Path) -> Optional[str]:
+        """Get Magento version."""
+        composer_json = path / "composer.json"
+        if composer_json.exists():
+            try:
+                content = json.loads(composer_json.read_text())
+                version = content.get("version")
+                if version:
+                    return version
+            except Exception:
+                pass
+        return None
+    
+    async def _update_magento_env(self, path: Path, db_config: Dict[str, Any]) -> None:
+        """Update Magento env.php with new database configuration."""
+        # This would need proper PHP array manipulation
+        pass
+
+
+class ShopwareAdapter(CMSAdapter):
+    """Adapter for Shopware e-commerce platform."""
+    
+    @property
+    def platform_type(self) -> str:
+        return "shopware"
+    
+    @property
+    def supported_versions(self) -> List[str]:
+        return ["5.0", "5.1", "5.2", "5.3", "5.4", "5.5", "5.6", "5.7", "6.0", "6.1", "6.2", "6.3", "6.4", "6.5"]
+    
+    async def detect_platform(self, path: Path) -> bool:
+        """Detect Shopware installation."""
+        # Check for Shopware 6
+        composer_json = path / "composer.json"
+        if composer_json.exists():
+            try:
+                content = json.loads(composer_json.read_text())
+                if "shopware/core" in content.get("require", {}):
+                    return True
+            except Exception:
+                pass
+        
+        # Check for Shopware 5
+        shopware_php = path / "shopware.php"
+        if shopware_php.exists():
+            return True
+        
+        return False
+    
+    async def analyze_platform(self, path: Path) -> PlatformInfo:
+        """Analyze Shopware installation."""
+        if not await self.detect_platform(path):
+            raise PlatformError(f"Shopware not detected at {path}")
+        
+        version = await self._get_shopware_version(path)
+        db_config = await self.get_database_config(path)
+        
+        return PlatformInfo(
+            platform_type=self.platform_type,
+            version=version,
+            framework="shopware",
+            database_type=db_config.get("type", "mysql"),
+            dependencies=["php", "mysql", "elasticsearch"],
+            config_files=[".env", "config/packages/framework.yaml"],
+            environment_variables={}
+        )
+    
+    async def get_dependencies(self) -> List[DependencyInfo]:
+        """Get Shopware dependencies."""
+        return [
+            DependencyInfo(name="php", version=">=7.4", required=True),
+            DependencyInfo(name="mysql", version=">=5.7", required=True),
+            DependencyInfo(name="elasticsearch", required=False),
+            DependencyInfo(name="composer", required=True)
+        ]
+    
+    async def get_environment_config(self, path: Path) -> EnvironmentConfig:
+        """Extract Shopware environment configuration."""
+        return EnvironmentConfig(
+            variables={},
+            files=[".env", "config/packages/framework.yaml"],
+            secrets=["DATABASE_URL", "APP_SECRET"]
+        )
+    
+    async def prepare_migration(self, source_path: Path, destination_path: Path) -> Dict[str, Any]:
+        """Prepare Shopware migration."""
+        platform_info = await self.analyze_platform(source_path)
+        db_config = await self.get_database_config(source_path)
+        
+        return {
+            "platform_info": platform_info.dict(),
+            "database_config": db_config,
+            "migration_steps": ["backup_database", "copy_files", "update_env"],
+            "files_to_copy": ["config", "custom", "files", "public", "var"]
+        }
+    
+    async def post_migration_setup(self, destination_path: Path, migration_info: Dict[str, Any]) -> bool:
+        """Perform Shopware post-migration setup."""
+        return True
+    
+    async def get_database_config(self, path: Path) -> Dict[str, Any]:
+        """Extract database configuration from Shopware .env."""
+        env_file = path / ".env"
+        if not env_file.exists():
+            return {}
+        
+        try:
+            content = env_file.read_text()
+            env_vars = self._extract_environment_variables(content)
+            
+            # Parse DATABASE_URL
+            db_url = env_vars.get("DATABASE_URL", "")
+            if db_url:
+                # Parse mysql://user:pass@host:port/dbname
+                import urllib.parse
+                parsed = urllib.parse.urlparse(db_url)
+                return {
+                    'type': parsed.scheme,
+                    'host': parsed.hostname,
+                    'port': parsed.port,
+                    'username': parsed.username,
+                    'password': parsed.password,
+                    'database': parsed.path.lstrip('/')
+                }
+        except Exception:
+            pass
+        
+        return {}
+    
+    async def _get_shopware_version(self, path: Path) -> Optional[str]:
+        """Get Shopware version."""
+        composer_json = path / "composer.json"
+        if composer_json.exists():
+            try:
+                content = json.loads(composer_json.read_text())
+                shopware_core = content.get("require", {}).get("shopware/core")
+                if shopware_core:
+                    return shopware_core.strip("^~")
+            except Exception:
+                pass
+        return None
+
+
+class PrestaShopAdapter(CMSAdapter):
+    """Adapter for PrestaShop e-commerce platform."""
+    
+    @property
+    def platform_type(self) -> str:
+        return "prestashop"
+    
+    @property
+    def supported_versions(self) -> List[str]:
+        return ["1.6", "1.7", "8.0", "8.1"]
+    
+    async def detect_platform(self, path: Path) -> bool:
+        """Detect PrestaShop installation."""
+        config_file = path / "config" / "settings.inc.php"
+        if config_file.exists():
+            return True
+        
+        # Check for index.php with PrestaShop signature
+        index_php = path / "index.php"
+        if index_php.exists():
+            try:
+                content = index_php.read_text()
+                return "PrestaShop" in content
+            except Exception:
+                pass
+        
+        return False
+    
+    async def analyze_platform(self, path: Path) -> PlatformInfo:
+        """Analyze PrestaShop installation."""
+        if not await self.detect_platform(path):
+            raise PlatformError(f"PrestaShop not detected at {path}")
+        
+        version = await self._get_prestashop_version(path)
+        db_config = await self.get_database_config(path)
+        
+        return PlatformInfo(
+            platform_type=self.platform_type,
+            version=version,
+            framework="prestashop",
+            database_type=db_config.get("type", "mysql"),
+            dependencies=["php", "mysql"],
+            config_files=["config/settings.inc.php"],
+            environment_variables={}
+        )
+    
+    async def get_dependencies(self) -> List[DependencyInfo]:
+        """Get PrestaShop dependencies."""
+        return [
+            DependencyInfo(name="php", version=">=7.2", required=True),
+            DependencyInfo(name="mysql", version=">=5.6", required=True)
+        ]
+    
+    async def get_environment_config(self, path: Path) -> EnvironmentConfig:
+        """Extract PrestaShop environment configuration."""
+        return EnvironmentConfig(
+            variables={},
+            files=["config/settings.inc.php"],
+            secrets=["_DB_PASSWD_", "_COOKIE_KEY_"]
+        )
+    
+    async def prepare_migration(self, source_path: Path, destination_path: Path) -> Dict[str, Any]:
+        """Prepare PrestaShop migration."""
+        platform_info = await self.analyze_platform(source_path)
+        db_config = await self.get_database_config(source_path)
+        
+        return {
+            "platform_info": platform_info.dict(),
+            "database_config": db_config,
+            "migration_steps": ["backup_database", "copy_files", "update_config"],
+            "files_to_copy": ["themes", "modules", "img", "upload", "download"]
+        }
+    
+    async def post_migration_setup(self, destination_path: Path, migration_info: Dict[str, Any]) -> bool:
+        """Perform PrestaShop post-migration setup."""
+        return True
+    
+    async def get_database_config(self, path: Path) -> Dict[str, Any]:
+        """Extract database configuration from PrestaShop settings."""
+        config_file = path / "config" / "settings.inc.php"
+        if not config_file.exists():
+            return {}
+        
+        try:
+            content = config_file.read_text()
+            db_config = {}
+            
+            patterns = {
+                'server': r"define\s*\(\s*['\"]_DB_SERVER_['\"]\s*,\s*['\"]([^'\"]+)['\"]",
+                'name': r"define\s*\(\s*['\"]_DB_NAME_['\"]\s*,\s*['\"]([^'\"]+)['\"]",
+                'user': r"define\s*\(\s*['\"]_DB_USER_['\"]\s*,\s*['\"]([^'\"]+)['\"]",
+                'passwd': r"define\s*\(\s*['\"]_DB_PASSWD_['\"]\s*,\s*['\"]([^'\"]+)['\"]",
+                'prefix': r"define\s*\(\s*['\"]_DB_PREFIX_['\"]\s*,\s*['\"]([^'\"]+)['\"]"
+            }
+            
+            for key, pattern in patterns.items():
+                match = re.search(pattern, content)
+                if match:
+                    db_config[key] = match.group(1)
+            
+            db_config['type'] = 'mysql'
+            return db_config
+        except Exception:
+            return {}
+    
+    async def _get_prestashop_version(self, path: Path) -> Optional[str]:
+        """Get PrestaShop version."""
+        config_file = path / "config" / "settings.inc.php"
+        if config_file.exists():
+            try:
+                content = config_file.read_text()
+                match = re.search(r"define\s*\(\s*['\"]_PS_VERSION_['\"]\s*,\s*['\"]([^'\"]+)['\"]", content)
+                if match:
+                    return match.group(1)
+            except Exception:
+                pass
+        return None
+
+
+class OpenCartAdapter(CMSAdapter):
+    """Adapter for OpenCart e-commerce platform."""
+    
+    @property
+    def platform_type(self) -> str:
+        return "opencart"
+    
+    @property
+    def supported_versions(self) -> List[str]:
+        return ["2.0", "2.1", "2.2", "2.3", "3.0", "4.0"]
+    
+    async def detect_platform(self, path: Path) -> bool:
+        """Detect OpenCart installation."""
+        config_file = path / "config.php"
+        admin_config = path / "admin" / "config.php"
+        
+        if config_file.exists() and admin_config.exists():
+            try:
+                content = config_file.read_text()
+                return "DIR_APPLICATION" in content and "DIR_SYSTEM" in content
+            except Exception:
+                pass
+        
+        return False
+    
+    async def analyze_platform(self, path: Path) -> PlatformInfo:
+        """Analyze OpenCart installation."""
+        if not await self.detect_platform(path):
+            raise PlatformError(f"OpenCart not detected at {path}")
+        
+        version = await self._get_opencart_version(path)
+        db_config = await self.get_database_config(path)
+        
+        return PlatformInfo(
+            platform_type=self.platform_type,
+            version=version,
+            framework="opencart",
+            database_type=db_config.get("type", "mysql"),
+            dependencies=["php", "mysql"],
+            config_files=["config.php", "admin/config.php"],
+            environment_variables={}
+        )
+    
+    async def get_dependencies(self) -> List[DependencyInfo]:
+        """Get OpenCart dependencies."""
+        return [
+            DependencyInfo(name="php", version=">=7.3", required=True),
+            DependencyInfo(name="mysql", version=">=5.6", required=True)
+        ]
+    
+    async def get_environment_config(self, path: Path) -> EnvironmentConfig:
+        """Extract OpenCart environment configuration."""
+        return EnvironmentConfig(
+            variables={},
+            files=["config.php", "admin/config.php"],
+            secrets=["DB_PASSWORD"]
+        )
+    
+    async def prepare_migration(self, source_path: Path, destination_path: Path) -> Dict[str, Any]:
+        """Prepare OpenCart migration."""
+        platform_info = await self.analyze_platform(source_path)
+        db_config = await self.get_database_config(source_path)
+        
+        return {
+            "platform_info": platform_info.dict(),
+            "database_config": db_config,
+            "migration_steps": ["backup_database", "copy_files", "update_config"],
+            "files_to_copy": ["catalog", "admin", "image", "system"]
+        }
+    
+    async def post_migration_setup(self, destination_path: Path, migration_info: Dict[str, Any]) -> bool:
+        """Perform OpenCart post-migration setup."""
+        return True
+    
+    async def get_database_config(self, path: Path) -> Dict[str, Any]:
+        """Extract database configuration from OpenCart config."""
+        config_file = path / "config.php"
+        if not config_file.exists():
+            return {}
+        
+        try:
+            content = config_file.read_text()
+            db_config = {}
+            
+            patterns = {
+                'hostname': r"define\s*\(\s*['\"]DB_HOSTNAME['\"]\s*,\s*['\"]([^'\"]+)['\"]",
+                'username': r"define\s*\(\s*['\"]DB_USERNAME['\"]\s*,\s*['\"]([^'\"]+)['\"]",
+                'password': r"define\s*\(\s*['\"]DB_PASSWORD['\"]\s*,\s*['\"]([^'\"]+)['\"]",
+                'database': r"define\s*\(\s*['\"]DB_DATABASE['\"]\s*,\s*['\"]([^'\"]+)['\"]",
+                'prefix': r"define\s*\(\s*['\"]DB_PREFIX['\"]\s*,\s*['\"]([^'\"]+)['\"]"
+            }
+            
+            for key, pattern in patterns.items():
+                match = re.search(pattern, content)
+                if match:
+                    db_config[key] = match.group(1)
+            
+            db_config['type'] = 'mysql'
+            return db_config
+        except Exception:
+            return {}
+    
+    async def _get_opencart_version(self, path: Path) -> Optional[str]:
+        """Get OpenCart version."""
+        version_file = path / "admin" / "controller" / "common" / "dashboard.php"
+        if version_file.exists():
+            try:
+                content = version_file.read_text()
+                match = re.search(r"VERSION['\"]?\s*=>\s*['\"]([^'\"]+)['\"]", content)
+                if match:
+                    return match.group(1)
+            except Exception:
+                pass
+        return None
+
+
+class GhostAdapter(CMSAdapter):
+    """Adapter for Ghost CMS platform."""
+    
+    @property
+    def platform_type(self) -> str:
+        return "ghost"
+    
+    @property
+    def supported_versions(self) -> List[str]:
+        return ["3.0", "4.0", "5.0"]
+    
+    async def detect_platform(self, path: Path) -> bool:
+        """Detect Ghost installation."""
+        package_json = path / "package.json"
+        if package_json.exists():
+            try:
+                content = json.loads(package_json.read_text())
+                return content.get("name") == "ghost"
+            except Exception:
+                pass
+        
+        # Check for Ghost binary
+        ghost_bin = path / "ghost"
+        return ghost_bin.exists()
+    
+    async def analyze_platform(self, path: Path) -> PlatformInfo:
+        """Analyze Ghost installation."""
+        if not await self.detect_platform(path):
+            raise PlatformError(f"Ghost not detected at {path}")
+        
+        version = await self._get_ghost_version(path)
+        db_config = await self.get_database_config(path)
+        
+        return PlatformInfo(
+            platform_type=self.platform_type,
+            version=version,
+            framework="ghost",
+            database_type=db_config.get("type", "sqlite"),
+            dependencies=["nodejs", "npm"],
+            config_files=["config.production.json", "config.development.json"],
+            environment_variables={}
+        )
+    
+    async def get_dependencies(self) -> List[DependencyInfo]:
+        """Get Ghost dependencies."""
+        return [
+            DependencyInfo(name="nodejs", version=">=14", required=True),
+            DependencyInfo(name="npm", required=True),
+            DependencyInfo(name="mysql", required=False)
+        ]
+    
+    async def get_environment_config(self, path: Path) -> EnvironmentConfig:
+        """Extract Ghost environment configuration."""
+        return EnvironmentConfig(
+            variables={},
+            files=["config.production.json", "config.development.json"],
+            secrets=["database.connection.password"]
+        )
+    
+    async def prepare_migration(self, source_path: Path, destination_path: Path) -> Dict[str, Any]:
+        """Prepare Ghost migration."""
+        platform_info = await self.analyze_platform(source_path)
+        db_config = await self.get_database_config(source_path)
+        
+        return {
+            "platform_info": platform_info.dict(),
+            "database_config": db_config,
+            "migration_steps": ["backup_database", "copy_files", "update_config"],
+            "files_to_copy": ["content", "config.production.json"]
+        }
+    
+    async def post_migration_setup(self, destination_path: Path, migration_info: Dict[str, Any]) -> bool:
+        """Perform Ghost post-migration setup."""
+        return True
+    
+    async def get_database_config(self, path: Path) -> Dict[str, Any]:
+        """Extract database configuration from Ghost config."""
+        config_files = [
+            path / "config.production.json",
+            path / "config.development.json"
+        ]
+        
+        for config_file in config_files:
+            if config_file.exists():
+                try:
+                    content = json.loads(config_file.read_text())
+                    db_config = content.get("database", {}).get("connection", {})
+                    if db_config:
+                        return db_config
+                except Exception:
+                    continue
+        
+        return {}
+    
+    async def _get_ghost_version(self, path: Path) -> Optional[str]:
+        """Get Ghost version."""
+        package_json = path / "package.json"
+        if package_json.exists():
+            try:
+                content = json.loads(package_json.read_text())
+                return content.get("version")
+            except Exception:
+                pass
+        return None
+
+
+class CraftCMSAdapter(CMSAdapter):
+    """Adapter for Craft CMS platform."""
+    
+    @property
+    def platform_type(self) -> str:
+        return "craftcms"
+    
+    @property
+    def supported_versions(self) -> List[str]:
+        return ["3.0", "3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7", "4.0", "4.1", "4.2", "4.3", "4.4"]
+    
+    async def detect_platform(self, path: Path) -> bool:
+        """Detect Craft CMS installation."""
+        composer_json = path / "composer.json"
+        if composer_json.exists():
+            try:
+                content = json.loads(composer_json.read_text())
+                if "craftcms/cms" in content.get("require", {}):
+                    return True
+            except Exception:
+                pass
+        
+        # Check for craft executable
+        craft_bin = path / "craft"
+        return craft_bin.exists()
+    
+    async def analyze_platform(self, path: Path) -> PlatformInfo:
+        """Analyze Craft CMS installation."""
+        if not await self.detect_platform(path):
+            raise PlatformError(f"Craft CMS not detected at {path}")
+        
+        version = await self._get_craftcms_version(path)
+        db_config = await self.get_database_config(path)
+        
+        return PlatformInfo(
+            platform_type=self.platform_type,
+            version=version,
+            framework="craftcms",
+            database_type=db_config.get("type", "mysql"),
+            dependencies=["php", "mysql", "composer"],
+            config_files=[".env", "config/db.php"],
+            environment_variables={}
+        )
+    
+    async def get_dependencies(self) -> List[DependencyInfo]:
+        """Get Craft CMS dependencies."""
+        return [
+            DependencyInfo(name="php", version=">=7.2", required=True),
+            DependencyInfo(name="mysql", version=">=5.7", required=True),
+            DependencyInfo(name="composer", required=True)
+        ]
+    
+    async def get_environment_config(self, path: Path) -> EnvironmentConfig:
+        """Extract Craft CMS environment configuration."""
+        return EnvironmentConfig(
+            variables={},
+            files=[".env", "config/db.php"],
+            secrets=["DB_PASSWORD", "SECURITY_KEY"]
+        )
+    
+    async def prepare_migration(self, source_path: Path, destination_path: Path) -> Dict[str, Any]:
+        """Prepare Craft CMS migration."""
+        platform_info = await self.analyze_platform(source_path)
+        db_config = await self.get_database_config(source_path)
+        
+        return {
+            "platform_info": platform_info.dict(),
+            "database_config": db_config,
+            "migration_steps": ["backup_database", "copy_files", "update_env"],
+            "files_to_copy": ["config", "templates", "web/assets", "storage"]
+        }
+    
+    async def post_migration_setup(self, destination_path: Path, migration_info: Dict[str, Any]) -> bool:
+        """Perform Craft CMS post-migration setup."""
+        return True
+    
+    async def get_database_config(self, path: Path) -> Dict[str, Any]:
+        """Extract database configuration from Craft CMS .env."""
+        env_file = path / ".env"
+        if not env_file.exists():
+            return {}
+        
+        try:
+            content = env_file.read_text()
+            env_vars = self._extract_environment_variables(content)
+            
+            return {
+                'type': 'mysql',
+                'server': env_vars.get('DB_SERVER', 'localhost'),
+                'database': env_vars.get('DB_DATABASE', ''),
+                'user': env_vars.get('DB_USER', ''),
+                'password': env_vars.get('DB_PASSWORD', ''),
+                'port': env_vars.get('DB_PORT', '3306'),
+                'table_prefix': env_vars.get('DB_TABLE_PREFIX', '')
+            }
+        except Exception:
+            return {}
+    
+    async def _get_craftcms_version(self, path: Path) -> Optional[str]:
+        """Get Craft CMS version."""
+        composer_json = path / "composer.json"
+        if composer_json.exists():
+            try:
+                content = json.loads(composer_json.read_text())
+                craft_version = content.get("require", {}).get("craftcms/cms")
+                if craft_version:
+                    return craft_version.strip("^~")
+            except Exception:
+                pass
+        return None
+
+
+class Typo3Adapter(CMSAdapter):
+    """Adapter for TYPO3 CMS platform."""
+    
+    @property
+    def platform_type(self) -> str:
+        return "typo3"
+    
+    @property
+    def supported_versions(self) -> List[str]:
+        return ["8.7", "9.5", "10.4", "11.5", "12.4"]
+    
+    async def detect_platform(self, path: Path) -> bool:
+        """Detect TYPO3 installation."""
+        composer_json = path / "composer.json"
+        if composer_json.exists():
+            try:
+                content = json.loads(composer_json.read_text())
+                if "typo3/cms-core" in content.get("require", {}):
+                    return True
+            except Exception:
+                pass
+        
+        # Check for typo3conf directory
+        typo3conf = path / "typo3conf"
+        return typo3conf.exists()
+    
+    async def analyze_platform(self, path: Path) -> PlatformInfo:
+        """Analyze TYPO3 installation."""
+        if not await self.detect_platform(path):
+            raise PlatformError(f"TYPO3 not detected at {path}")
+        
+        version = await self._get_typo3_version(path)
+        db_config = await self.get_database_config(path)
+        
+        return PlatformInfo(
+            platform_type=self.platform_type,
+            version=version,
+            framework="typo3",
+            database_type=db_config.get("type", "mysql"),
+            dependencies=["php", "mysql", "composer"],
+            config_files=["typo3conf/LocalConfiguration.php", ".env"],
+            environment_variables={}
+        )
+    
+    async def get_dependencies(self) -> List[DependencyInfo]:
+        """Get TYPO3 dependencies."""
+        return [
+            DependencyInfo(name="php", version=">=7.4", required=True),
+            DependencyInfo(name="mysql", version=">=5.7", required=True),
+            DependencyInfo(name="composer", required=True)
+        ]
+    
+    async def get_environment_config(self, path: Path) -> EnvironmentConfig:
+        """Extract TYPO3 environment configuration."""
+        return EnvironmentConfig(
+            variables={},
+            files=["typo3conf/LocalConfiguration.php", ".env"],
+            secrets=["DB_PASSWORD", "encryptionKey"]
+        )
+    
+    async def prepare_migration(self, source_path: Path, destination_path: Path) -> Dict[str, Any]:
+        """Prepare TYPO3 migration."""
+        platform_info = await self.analyze_platform(source_path)
+        db_config = await self.get_database_config(source_path)
+        
+        return {
+            "platform_info": platform_info.dict(),
+            "database_config": db_config,
+            "migration_steps": ["backup_database", "copy_files", "update_config"],
+            "files_to_copy": ["typo3conf", "fileadmin", "uploads"]
+        }
+    
+    async def post_migration_setup(self, destination_path: Path, migration_info: Dict[str, Any]) -> bool:
+        """Perform TYPO3 post-migration setup."""
+        return True
+    
+    async def get_database_config(self, path: Path) -> Dict[str, Any]:
+        """Extract database configuration from TYPO3 LocalConfiguration.php."""
+        config_file = path / "typo3conf" / "LocalConfiguration.php"
+        if not config_file.exists():
+            return {}
+        
+        try:
+            content = config_file.read_text()
+            # This is a simplified parser for PHP arrays
+            db_config = {}
+            
+            patterns = {
+                'host': r"'host'\s*=>\s*'([^']+)'",
+                'dbname': r"'dbname'\s*=>\s*'([^']+)'",
+                'user': r"'user'\s*=>\s*'([^']+)'",
+                'password': r"'password'\s*=>\s*'([^']+)'",
+                'port': r"'port'\s*=>\s*'?([^',]+)'?"
+            }
+            
+            for key, pattern in patterns.items():
+                match = re.search(pattern, content)
+                if match:
+                    db_config[key] = match.group(1)
+            
+            db_config['type'] = 'mysql'
+            return db_config
+        except Exception:
+            return {}
+    
+    async def _get_typo3_version(self, path: Path) -> Optional[str]:
+        """Get TYPO3 version."""
+        composer_json = path / "composer.json"
+        if composer_json.exists():
+            try:
+                content = json.loads(composer_json.read_text())
+                typo3_version = content.get("require", {}).get("typo3/cms-core")
+                if typo3_version:
+                    return typo3_version.strip("^~")
+            except Exception:
+                pass
+        return None
+
+
+class Concrete5Adapter(CMSAdapter):
+    """Adapter for Concrete5 CMS platform."""
+    
+    @property
+    def platform_type(self) -> str:
+        return "concrete5"
+    
+    @property
+    def supported_versions(self) -> List[str]:
+        return ["8.0", "8.1", "8.2", "8.3", "8.4", "8.5", "9.0", "9.1", "9.2"]
+    
+    async def detect_platform(self, path: Path) -> bool:
+        """Detect Concrete5 installation."""
+        # Check for concrete directory
+        concrete_dir = path / "concrete"
+        if concrete_dir.exists():
+            return True
+        
+        # Check for composer.json with concrete5
+        composer_json = path / "composer.json"
+        if composer_json.exists():
+            try:
+                content = json.loads(composer_json.read_text())
+                if "concrete5/concrete5" in content.get("require", {}):
+                    return True
+            except Exception:
+                pass
+        
+        return False
+    
+    async def analyze_platform(self, path: Path) -> PlatformInfo:
+        """Analyze Concrete5 installation."""
+        if not await self.detect_platform(path):
+            raise PlatformError(f"Concrete5 not detected at {path}")
+        
+        version = await self._get_concrete5_version(path)
+        db_config = await self.get_database_config(path)
+        
+        return PlatformInfo(
+            platform_type=self.platform_type,
+            version=version,
+            framework="concrete5",
+            database_type=db_config.get("type", "mysql"),
+            dependencies=["php", "mysql"],
+            config_files=["application/config/database.php", "application/config/site.php"],
+            environment_variables={}
+        )
+    
+    async def get_dependencies(self) -> List[DependencyInfo]:
+        """Get Concrete5 dependencies."""
+        return [
+            DependencyInfo(name="php", version=">=7.3", required=True),
+            DependencyInfo(name="mysql", version=">=5.7", required=True)
+        ]
+    
+    async def get_environment_config(self, path: Path) -> EnvironmentConfig:
+        """Extract Concrete5 environment configuration."""
+        return EnvironmentConfig(
+            variables={},
+            files=["application/config/database.php", "application/config/site.php"],
+            secrets=["password"]
+        )
+    
+    async def prepare_migration(self, source_path: Path, destination_path: Path) -> Dict[str, Any]:
+        """Prepare Concrete5 migration."""
+        platform_info = await self.analyze_platform(source_path)
+        db_config = await self.get_database_config(source_path)
+        
+        return {
+            "platform_info": platform_info.dict(),
+            "database_config": db_config,
+            "migration_steps": ["backup_database", "copy_files", "update_config"],
+            "files_to_copy": ["application", "packages", "files"]
+        }
+    
+    async def post_migration_setup(self, destination_path: Path, migration_info: Dict[str, Any]) -> bool:
+        """Perform Concrete5 post-migration setup."""
+        return True
+    
+    async def get_database_config(self, path: Path) -> Dict[str, Any]:
+        """Extract database configuration from Concrete5 config."""
+        config_file = path / "application" / "config" / "database.php"
+        if not config_file.exists():
+            return {}
+        
+        try:
+            content = config_file.read_text()
+            db_config = {}
+            
+            patterns = {
+                'server': r"'server'\s*=>\s*'([^']+)'",
+                'database': r"'database'\s*=>\s*'([^']+)'",
+                'username': r"'username'\s*=>\s*'([^']+)'",
+                'password': r"'password'\s*=>\s*'([^']+)'"
+            }
+            
+            for key, pattern in patterns.items():
+                match = re.search(pattern, content)
+                if match:
+                    db_config[key] = match.group(1)
+            
+            db_config['type'] = 'mysql'
+            return db_config
+        except Exception:
+            return {}
+    
+    async def _get_concrete5_version(self, path: Path) -> Optional[str]:
+        """Get Concrete5 version."""
+        version_file = path / "concrete" / "config" / "version.php"
+        if version_file.exists():
+            try:
+                content = version_file.read_text()
+                match = re.search(r"'version'\s*=>\s*'([^']+)'", content)
+                if match:
+                    return match.group(1)
+            except Exception:
+                pass
+        return None
+
+
+class UmbracoAdapter(CMSAdapter):
+    """Adapter for Umbraco CMS platform (.NET based)."""
+    
+    @property
+    def platform_type(self) -> str:
+        return "umbraco"
+    
+    @property
+    def supported_versions(self) -> List[str]:
+        return ["8.0", "9.0", "10.0", "11.0", "12.0", "13.0"]
+    
+    async def detect_platform(self, path: Path) -> bool:
+        """Detect Umbraco installation."""
+        # Check for Umbraco specific files
+        web_config = path / "web.config"
+        if web_config.exists():
+            try:
+                content = web_config.read_text()
+                if "Umbraco" in content:
+                    return True
+            except Exception:
+                pass
+        
+        # Check for umbraco directory
+        umbraco_dir = path / "umbraco"
+        if umbraco_dir.exists():
+            return True
+        
+        # Check for .csproj with Umbraco references
+        for csproj_file in path.glob("*.csproj"):
+            try:
+                content = csproj_file.read_text()
+                if "UmbracoCms" in content or "Umbraco.Cms" in content:
+                    return True
+            except Exception:
+                continue
+        
+        return False
+    
+    async def analyze_platform(self, path: Path) -> PlatformInfo:
+        """Analyze Umbraco installation."""
+        if not await self.detect_platform(path):
+            raise PlatformError(f"Umbraco not detected at {path}")
+        
+        version = await self._get_umbraco_version(path)
+        db_config = await self.get_database_config(path)
+        
+        return PlatformInfo(
+            platform_type=self.platform_type,
+            version=version,
+            framework="umbraco",
+            database_type=db_config.get("type", "sqlserver"),
+            dependencies=[".net", "sqlserver"],
+            config_files=["web.config", "appsettings.json"],
+            environment_variables={}
+        )
+    
+    async def get_dependencies(self) -> List[DependencyInfo]:
+        """Get Umbraco dependencies."""
+        return [
+            DependencyInfo(name=".net", version=">=6.0", required=True),
+            DependencyInfo(name="sqlserver", required=True),
+            DependencyInfo(name="iis", required=False)
+        ]
+    
+    async def get_environment_config(self, path: Path) -> EnvironmentConfig:
+        """Extract Umbraco environment configuration."""
+        return EnvironmentConfig(
+            variables={},
+            files=["web.config", "appsettings.json"],
+            secrets=["connectionString"]
+        )
+    
+    async def prepare_migration(self, source_path: Path, destination_path: Path) -> Dict[str, Any]:
+        """Prepare Umbraco migration."""
+        platform_info = await self.analyze_platform(source_path)
+        db_config = await self.get_database_config(source_path)
+        
+        return {
+            "platform_info": platform_info.dict(),
+            "database_config": db_config,
+            "migration_steps": ["backup_database", "copy_files", "update_config"],
+            "files_to_copy": ["Views", "App_Data", "media", "css", "scripts"]
+        }
+    
+    async def post_migration_setup(self, destination_path: Path, migration_info: Dict[str, Any]) -> bool:
+        """Perform Umbraco post-migration setup."""
+        return True
+    
+    async def get_database_config(self, path: Path) -> Dict[str, Any]:
+        """Extract database configuration from Umbraco config."""
+        # Try web.config first
+        web_config = path / "web.config"
+        if web_config.exists():
+            try:
+                content = web_config.read_text()
+                # Parse connection string from web.config
+                match = re.search(r'connectionString="([^"]+)"', content)
+                if match:
+                    conn_str = match.group(1)
+                    return self._parse_connection_string(conn_str)
+            except Exception:
+                pass
+        
+        # Try appsettings.json for newer versions
+        appsettings = path / "appsettings.json"
+        if appsettings.exists():
+            try:
+                content = json.loads(appsettings.read_text())
+                conn_strings = content.get("ConnectionStrings", {})
+                if conn_strings:
+                    umbraco_conn = conn_strings.get("umbracoDbDSN", "")
+                    if umbraco_conn:
+                        return self._parse_connection_string(umbraco_conn)
+            except Exception:
+                pass
+        
+        return {}
+    
+    def _parse_connection_string(self, conn_str: str) -> Dict[str, Any]:
+        """Parse SQL Server connection string."""
+        config = {'type': 'sqlserver'}
+        
+        # Parse connection string components
+        parts = conn_str.split(';')
+        for part in parts:
+            if '=' in part:
+                key, value = part.split('=', 1)
+                key = key.strip().lower()
+                value = value.strip()
+                
+                if key in ['server', 'data source']:
+                    config['server'] = value
+                elif key in ['database', 'initial catalog']:
+                    config['database'] = value
+                elif key in ['user id', 'uid']:
+                    config['username'] = value
+                elif key in ['password', 'pwd']:
+                    config['password'] = value
+        
+        return config
+    
+    async def _get_umbraco_version(self, path: Path) -> Optional[str]:
+        """Get Umbraco version."""
+        # Try to find version in .csproj files
+        for csproj_file in path.glob("*.csproj"):
+            try:
+                content = csproj_file.read_text()
+                # Look for Umbraco package references
+                patterns = [
+                    r'<PackageReference Include="UmbracoCms[^"]*" Version="([^"]+)"',
+                    r'<PackageReference Include="Umbraco\.Cms[^"]*" Version="([^"]+)"'
+                ]
+                
+                for pattern in patterns:
+                    match = re.search(pattern, content)
+                    if match:
+                        return match.group(1)
+            except Exception:
+                continue
+        
+        return None

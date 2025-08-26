@@ -471,8 +471,8 @@ class TestCreateDatabaseMigrator:
         assert migrator.source_config == source_config
         assert migrator.destination_config == destination_config
 
-cl
-ass TestDatabaseMigrationFactoryEnhanced:
+
+class TestDatabaseMigrationFactoryEnhanced:
     """Test cases for enhanced DatabaseMigrationFactory functionality."""
     
     def setup_method(self):

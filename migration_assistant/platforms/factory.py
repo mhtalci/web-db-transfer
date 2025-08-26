@@ -6,7 +6,9 @@ from typing import Dict, Type, Optional, List
 from pathlib import Path
 
 from .base import PlatformAdapter
-from .cms import CMSAdapter, WordPressAdapter, DrupalAdapter, JoomlaAdapter
+from .cms import (CMSAdapter, WordPressAdapter, DrupalAdapter, JoomlaAdapter, 
+                 MagentoAdapter, ShopwareAdapter, PrestaShopAdapter, OpenCartAdapter, 
+                 GhostAdapter, CraftCMSAdapter, Typo3Adapter, Concrete5Adapter, UmbracoAdapter)
 from .framework import FrameworkAdapter, DjangoAdapter, LaravelAdapter, RailsAdapter, SpringBootAdapter, NextJSAdapter
 from .container import ContainerAdapter, DockerAdapter, KubernetesAdapter
 from .cloud import CloudAdapter, AWSAdapter, AzureAdapter, GCPAdapter, NetlifyAdapter, VercelAdapter
@@ -29,6 +31,15 @@ class PlatformAdapterFactory:
         "wordpress": WordPressAdapter,
         "drupal": DrupalAdapter,
         "joomla": JoomlaAdapter,
+        "magento": MagentoAdapter,
+        "shopware": ShopwareAdapter,
+        "prestashop": PrestaShopAdapter,
+        "opencart": OpenCartAdapter,
+        "ghost": GhostAdapter,
+        "craftcms": CraftCMSAdapter,
+        "typo3": Typo3Adapter,
+        "concrete5": Concrete5Adapter,
+        "umbraco": UmbracoAdapter,
         
         # Framework Adapters
         "django": DjangoAdapter,
@@ -114,6 +125,15 @@ class PlatformAdapterFactory:
             "wordpress",
             "drupal", 
             "joomla",
+            "magento",
+            "shopware",
+            "prestashop",
+            "opencart",
+            "ghost",
+            "craftcms",
+            "typo3",
+            "concrete5",
+            "umbraco",
             
             # Web frameworks
             "django",
@@ -242,9 +262,18 @@ class PlatformAdapterFactory:
         # Basic compatibility rules
         compatibility_matrix = {
             # CMS to CMS migrations
-            "wordpress": ["wordpress", "drupal", "joomla"],
-            "drupal": ["drupal", "wordpress"],
+            "wordpress": ["wordpress", "drupal", "joomla", "ghost"],
+            "drupal": ["drupal", "wordpress", "ghost"],
             "joomla": ["joomla", "wordpress"],
+            "magento": ["magento", "shopware", "prestashop", "opencart"],
+            "shopware": ["shopware", "magento", "prestashop", "opencart"],
+            "prestashop": ["prestashop", "magento", "shopware", "opencart"],
+            "opencart": ["opencart", "magento", "shopware", "prestashop"],
+            "ghost": ["ghost", "wordpress", "drupal", "craftcms"],
+            "craftcms": ["craftcms", "wordpress", "drupal", "ghost"],
+            "typo3": ["typo3", "wordpress", "drupal"],
+            "concrete5": ["concrete5", "wordpress", "drupal"],
+            "umbraco": ["umbraco", "wordpress", "drupal"],
             
             # Framework to framework migrations
             "django": ["django"],
