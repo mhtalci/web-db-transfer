@@ -1,0 +1,32 @@
+[Unit]
+Description=Web Database Migration Assistant
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=migration
+Group=migration
+WorkingDirectory=/opt/migration-assistant
+Environment=PATH=/opt/migration-assistant/venv/bin
+Environment=MIGRATION_LOG_LEVEL=INFO
+Environment=MIGRATION_BACKUP_ENABLED=true
+Environment=MIGRATION_PERFORMANCE_ENGINE=go
+ExecStart=/opt/migration-assistant/venv/bin/python -m migration_assistant.api.main
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=migration-assistant
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/migration-assistant/logs /opt/migration-assistant/backups
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target

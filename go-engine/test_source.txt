@@ -1,3 +1,0 @@
-This is a test file for the Go migration engine.
-It contains some sample content to test file operations.
-Line 3 of the test file.

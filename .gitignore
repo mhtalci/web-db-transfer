@@ -1,31 +1,115 @@
-# Test directories
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.env/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
 coverage/
+*.cover
+.hypothesis/
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
 
 # MacOS
 .DS_Store
+.AppleDouble
+.LSOverride
 
 # Windows
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 
 # Log files
 *.log
+logs/
 
 # IDEs and editors
 .vscode/
 .idea/
 *.sublime-workspace
 *.sublime-project
+*.swp
+*.swo
 
 # Environment files
 .env
 .env.local
 .env.*.local
+config.yaml
+config.yml
+*.config
 
 # Kiro configuration and specs
 .kiro/
 
-# Miscellaneous
-*.swp
-*.swo
-*.bak
+# Production data
+backups/
+dumps/
+migrations/
+data/
+
+# Temporary files
 *.tmp
+*.bak
+*.backup
+temp/
+tmp/
+
+# Security
+*.pem
+*.key
+*.crt
+*.p12
+secrets/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Benchmarks and profiling
+.benchmarks/
+*.prof
+*.pprof
+
+# Ansible
+.ansible/
+ansible.cfg
