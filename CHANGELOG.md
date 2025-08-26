@@ -8,12 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2025-08-26
 
 ### Added
-- Initial release of Web Database Migration Assistant
-- Multi-database support (MySQL, PostgreSQL, MongoDB, SQLite, Redis)
+- Initial release of Web Database Transfer Assistant
+- Same-type database transfers (MySQL to MySQL, PostgreSQL to PostgreSQL, etc.)
 - Multiple transfer methods (SSH/SCP, FTP/SFTP, Rsync, Cloud storage)
 - Platform integration for cPanel, Plesk, DirectAdmin, WordPress, Drupal
 - High-performance Go engine with Python orchestration
-- Comprehensive validation and pre-migration checks
+- Pre-transfer validation and connectivity checks
 - Automated backup and rollback capabilities
 - Real-time monitoring and progress tracking
 - Security features including encryption and credential management
@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Docker support for containerized deployments
 - Comprehensive test suite with 95%+ coverage
 - Complete documentation and user guides
+
+### Design Philosophy
+- Focus on reliable same-type transfers rather than complex cross-database migrations
+- Simplified configuration and setup process
+- Production-ready with minimal complexity
 
 ### Security
 - Encrypted data transfers by default

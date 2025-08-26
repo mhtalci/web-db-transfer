@@ -1,14 +1,14 @@
-# Web Database Migration Assistant
+# Web Database Transfer Assistant
 
-A comprehensive, production-ready tool for migrating websites and databases between servers with support for multiple platforms, databases, and transfer methods.
+A simple, production-ready tool for transferring websites and databases between servers of the same type. Focused on reliable same-type transfers (MySQL to MySQL, PostgreSQL to PostgreSQL, etc.) rather than complex cross-database migrations.
 
 ## Features
 
-- **Multi-Database Support**: MySQL, PostgreSQL, MongoDB, SQLite, Redis
+- **Same-Type Database Transfers**: MySQL, PostgreSQL, MongoDB, SQLite, Redis
 - **Multiple Transfer Methods**: SSH/SCP, FTP/SFTP, Rsync, Cloud storage (AWS S3, Google Cloud, Azure)
 - **Platform Integration**: cPanel, Plesk, DirectAdmin, WordPress, Drupal, and more
 - **High Performance**: Go-powered engine with Python orchestration
-- **Comprehensive Validation**: Pre-migration checks, data integrity validation
+- **Pre-Transfer Validation**: Connectivity checks, space validation, compatibility verification
 - **Backup & Recovery**: Automated backups with rollback capabilities
 - **Real-time Monitoring**: Progress tracking and performance metrics
 - **Security**: Encrypted transfers, credential management, data sanitization
@@ -33,11 +33,11 @@ pip install -e .
 
 #### CLI Interface
 ```bash
-# Interactive migration setup
+# Interactive transfer setup
 python -m migration_assistant.cli.main
 
-# Quick migration with preset
-migration-assistant migrate --preset wordpress-to-cpanel --source-host example.com --dest-host newserver.com
+# Quick transfer with preset
+migration-assistant transfer --preset wordpress-cpanel --source-host example.com --dest-host newserver.com
 ```
 
 #### API Interface
@@ -46,7 +46,7 @@ migration-assistant migrate --preset wordpress-to-cpanel --source-host example.c
 python -m migration_assistant.api.main
 
 # Use the REST API
-curl -X POST http://localhost:8000/api/v1/migrations \
+curl -X POST http://localhost:8000/api/v1/transfers \
   -H "Content-Type: application/json" \
   -d '{"source": {...}, "destination": {...}}'
 ```
@@ -63,7 +63,7 @@ export MIGRATION_PERFORMANCE_ENGINE=go
 ### Configuration File
 Create `config.yaml`:
 ```yaml
-migration:
+transfer:
   backup:
     enabled: true
     retention_days: 30
@@ -73,6 +73,9 @@ migration:
   security:
     encrypt_transfers: true
     validate_checksums: true
+  validation:
+    check_connectivity: true
+    verify_space: true
 ```
 
 ## Supported Platforms
@@ -107,7 +110,7 @@ migration:
 - [Getting Started Guide](docs/user-guide/getting-started.md)
 - [CLI Reference](docs/user-guide/cli-guide.md)
 - [API Documentation](docs/user-guide/api-guide.md)
-- [Migration Guides](docs/migration-guides/)
+- [Transfer Guides](docs/migration-guides/)
 - [Advanced Configuration](docs/advanced/)
 
 ## Development
