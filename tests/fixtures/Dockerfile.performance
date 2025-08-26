@@ -1,0 +1,57 @@
+FROM python:3.11-slim
+
+# Install system dependencies for performance testing
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    git \
+    htop \
+    iotop \
+    net-tools \
+    psmisc \
+    sysstat \
+    time \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Go for performance comparisons
+RUN curl -L https://go.dev/dl/go1.21.5.linux-amd64.tar.gz | tar -C /usr/local -xz
+ENV PATH="/usr/local/go/bin:${PATH}"
+
+WORKDIR /app
+
+# Copy requirements and install Python dependencies
+COPY pyproject.toml .
+RUN pip install --no-cache-dir -e ".[dev,test]"
+
+# Install additional performance testing tools
+RUN pip install --no-cache-dir \
+    memory-profiler \
+    py-spy \
+    pytest-benchmark \
+    pytest-xdist
+
+# Copy application code
+COPY . .
+
+# Build Go binary with optimizations
+RUN cd go-engine && go build -ldflags="-s -w" -o bin/migration-engine ./cmd/migration-engine
+
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV TEST_ENVIRONMENT=performance
+ENV GO_BINARY_PATH=/app/go-engine/bin/migration-engine
+ENV BENCHMARK_DATA_PATH=/data
+
+# Create performance test data
+RUN mkdir -p /data/performance-tests
+RUN python -c "
+import os
+# Create test files of various sizes
+sizes = {'small': 1024, 'medium': 1024*100, 'large': 1024*1024*10}
+for name, size in sizes.items():
+    with open(f'/data/performance-tests/{name}_file.txt', 'w') as f:
+        f.write('x' * size)
+"
+
+# Default command runs performance tests
+CMD ["python", "-m", "pytest", "tests/", "-v", "-m", "benchmark", "--benchmark-only", "--benchmark-json=/data/benchmark_results.json"]
