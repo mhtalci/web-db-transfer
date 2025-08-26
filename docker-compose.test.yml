@@ -1,0 +1,275 @@
+version: '3.8'
+
+services:
+  # Test Databases
+  mysql-test:
+    image: mysql:8.0
+    container_name: migration_test_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: testpass
+      MYSQL_DATABASE: testdb
+      MYSQL_USER: testuser
+      MYSQL_PASSWORD: testpass
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_test_data:/var/lib/mysql
+      - ./tests/fixtures/mysql:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+    networks:
+      - test-network
+
+  postgres-test:
+    image: postgres:15
+    container_name: migration_test_postgres
+    environment:
+      POSTGRES_PASSWORD: testpass
+      POSTGRES_DB: testdb
+      POSTGRES_USER: testuser
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+      - ./tests/fixtures/postgres:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U testuser -d testdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - test-network
+
+  mongodb-test:
+    image: mongo:6.0
+    container_name: migration_test_mongo
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo_test_data:/data/db
+      - ./tests/fixtures/mongo:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    networks:
+      - test-network
+
+  redis-test:
+    image: redis:7-alpine
+    container_name: migration_test_redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_test_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - test-network
+
+  # Mock Cloud Services
+  localstack:
+    image: localstack/localstack:latest
+    container_name: migration_test_localstack
+    environment:
+      SERVICES: s3,dynamodb,lambda,apigateway
+      DEBUG: 1
+      DATA_DIR: /tmp/localstack/data
+      DOCKER_HOST: unix:///var/run/docker.sock
+    ports:
+      - "4566:4566"
+      - "4571:4571"
+    volumes:
+      - localstack_data:/tmp/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./tests/fixtures/localstack:/docker-entrypoint-initaws.d
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - test-network
+
+  # Mock Control Panel APIs
+  mock-cpanel:
+    build:
+      context: ./tests/fixtures/mock-apis
+      dockerfile: Dockerfile.cpanel
+    container_name: migration_test_cpanel
+    ports:
+      - "2083:2083"
+    environment:
+      API_PORT: 2083
+      API_HOST: 0.0.0.0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2083/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - test-network
+
+  mock-directadmin:
+    build:
+      context: ./tests/fixtures/mock-apis
+      dockerfile: Dockerfile.directadmin
+    container_name: migration_test_directadmin
+    ports:
+      - "2222:2222"
+    environment:
+      API_PORT: 2222
+      API_HOST: 0.0.0.0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2222/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - test-network
+
+  mock-plesk:
+    build:
+      context: ./tests/fixtures/mock-apis
+      dockerfile: Dockerfile.plesk
+    container_name: migration_test_plesk
+    ports:
+      - "8443:8443"
+    environment:
+      API_PORT: 8443
+      API_HOST: 0.0.0.0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-k", "https://localhost:8443/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - test-network
+
+  # Test FTP Server
+  ftp-test:
+    image: stilliard/pure-ftpd:hardened
+    container_name: migration_test_ftp
+    ports:
+      - "21:21"
+      - "30000-30009:30000-30009"
+    environment:
+      PUBLICHOST: localhost
+      FTP_USER_NAME: testuser
+      FTP_USER_PASS: testpass
+      FTP_USER_HOME: /home/testuser
+    volumes:
+      - ftp_test_data:/home/testuser
+      - ./tests/fixtures/ftp:/etc/pure-ftpd/passwd
+    networks:
+      - test-network
+
+  # Test SSH Server
+  ssh-test:
+    image: linuxserver/openssh-server:latest
+    container_name: migration_test_ssh
+    ports:
+      - "2222:2222"
+    environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: UTC
+      PUBLIC_KEY_FILE: /config/authorized_keys
+      SUDO_ACCESS: false
+      PASSWORD_ACCESS: true
+      USER_PASSWORD: testpass
+      USER_NAME: testuser
+    volumes:
+      - ssh_test_data:/config
+      - ./tests/fixtures/ssh/authorized_keys:/config/authorized_keys
+    networks:
+      - test-network
+
+  # Performance Testing Tools
+  performance-test:
+    build:
+      context: .
+      dockerfile: tests/fixtures/Dockerfile.performance
+    container_name: migration_test_performance
+    volumes:
+      - ./:/app
+      - performance_test_data:/data
+    environment:
+      PYTHONPATH: /app
+      TEST_DATA_PATH: /data
+    depends_on:
+      - mysql-test
+      - postgres-test
+      - mongodb-test
+      - redis-test
+    networks:
+      - test-network
+    profiles:
+      - performance
+
+  # Integration Test Runner
+  integration-test:
+    build:
+      context: .
+      dockerfile: tests/fixtures/Dockerfile.integration
+    container_name: migration_test_integration
+    volumes:
+      - ./:/app
+      - integration_test_data:/data
+    environment:
+      PYTHONPATH: /app
+      TEST_DATABASE_MYSQL_HOST: mysql-test
+      TEST_DATABASE_POSTGRES_HOST: postgres-test
+      TEST_DATABASE_MONGO_HOST: mongodb-test
+      TEST_DATABASE_REDIS_HOST: redis-test
+      TEST_LOCALSTACK_HOST: localstack
+      TEST_FTP_HOST: ftp-test
+      TEST_SSH_HOST: ssh-test
+      TEST_CPANEL_HOST: mock-cpanel
+      TEST_DIRECTADMIN_HOST: mock-directadmin
+      TEST_PLESK_HOST: mock-plesk
+    depends_on:
+      mysql-test:
+        condition: service_healthy
+      postgres-test:
+        condition: service_healthy
+      mongodb-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+      mock-cpanel:
+        condition: service_healthy
+      mock-directadmin:
+        condition: service_healthy
+      mock-plesk:
+        condition: service_healthy
+    networks:
+      - test-network
+    profiles:
+      - integration
+
+volumes:
+  mysql_test_data:
+  postgres_test_data:
+  mongo_test_data:
+  redis_test_data:
+  localstack_data:
+  ftp_test_data:
+  ssh_test_data:
+  performance_test_data:
+  integration_test_data:
+
+networks:
+  test-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

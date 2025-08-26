@@ -1,0 +1,41 @@
+FROM python:3.11-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    git \
+    openssh-client \
+    rsync \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Go for hybrid testing
+RUN curl -L https://go.dev/dl/go1.21.5.linux-amd64.tar.gz | tar -C /usr/local -xz
+ENV PATH="/usr/local/go/bin:${PATH}"
+
+WORKDIR /app
+
+# Copy requirements and install Python dependencies
+COPY pyproject.toml .
+RUN pip install --no-cache-dir -e ".[dev,test]"
+
+# Copy application code
+COPY . .
+
+# Build Go binary
+RUN cd go-engine && go build -o bin/migration-engine ./cmd/migration-engine
+
+# Set environment variables for testing
+ENV PYTHONPATH=/app
+ENV TEST_ENVIRONMENT=integration
+ENV GO_BINARY_PATH=/app/go-engine/bin/migration-engine
+
+# Create test data directory
+RUN mkdir -p /data/test-files /data/test-databases /data/test-configs
+
+# Copy test fixtures
+COPY tests/fixtures/test-data/ /data/test-files/
+COPY tests/fixtures/sql/ /data/test-databases/
+
+# Default command runs integration tests
+CMD ["python", "-m", "pytest", "tests/", "-v", "-m", "integration", "--tb=short"]
