@@ -12,7 +12,7 @@ This guide covers migrating from popular hosting control panels (cPanel, DirectA
 - [Troubleshooting](#troubleshooting)
 - [Best Practices](#best-practices)
 
-## 🌐 Overview
+##  Overview
 
 Control panel migrations involve extracting websites, databases, email accounts, and configurations from managed hosting environments and migrating them to new platforms. The Migration Assistant provides native API integration for major control panels.
 
@@ -28,7 +28,7 @@ Control panel migrations involve extracting websites, databases, email accounts,
 - **Static Hosting**: Netlify, Vercel, GitHub Pages
 - **Managed Hosting**: WordPress.com, Shopify, etc.
 
-## 🔧 cPanel Migrations
+##  cPanel Migrations
 
 ### Prerequisites
 - cPanel API access (API Token or Username/Password)
@@ -278,7 +278,7 @@ cron_migration:
   convert_to_serverless: true
 ```
 
-## 🔧 DirectAdmin Migrations
+##  DirectAdmin Migrations
 
 ### Prerequisites
 - DirectAdmin admin or user account
@@ -409,7 +409,7 @@ file_mapping:
   logs: "/var/log/httpd/domains/domain.com.log"
 ```
 
-## 🔧 Plesk Migrations
+##  Plesk Migrations
 
 ### Prerequisites
 - Plesk admin or customer account
@@ -575,7 +575,7 @@ destination:
   billing_separation: true
 ```
 
-## 🔍 Validation and Testing
+##  Validation and Testing
 
 ### Pre-Migration Validation
 ```bash
@@ -603,7 +603,7 @@ migration-assistant migrate --dry-run \
   --skip-email
 ```
 
-## 🚨 Troubleshooting
+##  Troubleshooting
 
 ### Common Issues
 
@@ -671,7 +671,7 @@ migration-assistant migrate --config fixed-config.yaml \
   --skip-completed-steps
 ```
 
-## ✅ Best Practices
+##  Best Practices
 
 ### Pre-Migration Planning
 1. **Inventory Assessment**

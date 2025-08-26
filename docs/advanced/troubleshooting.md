@@ -16,7 +16,7 @@ This comprehensive troubleshooting guide covers common issues, error messages, a
 - [File Transfer Issues](#file-transfer-issues)
 - [Logging and Debugging](#logging-and-debugging)
 
-## 🔧 General Troubleshooting
+##  General Troubleshooting
 
 ### Quick Diagnostic Commands
 ```bash
@@ -94,7 +94,7 @@ pip cache purge
 pip install --no-cache-dir web-database-migration-assistant
 ```
 
-## 🚀 Installation Issues
+##  Installation Issues
 
 ### Python Version Compatibility
 **Issue**: "Python version not supported"
@@ -173,7 +173,7 @@ docker run --rm -it \
 docker logs container_id
 ```
 
-## 🌐 Connection Problems
+##  Connection Problems
 
 ### SSH Connection Issues
 **Issue**: "SSH connection failed" or "Connection timeout"
@@ -337,7 +337,7 @@ az account list
 az login
 ```
 
-## ❌ Migration Failures
+##  Migration Failures
 
 ### Migration Stuck or Hanging
 **Issue**: Migration appears to hang or make no progress
@@ -405,7 +405,7 @@ migration-assistant rollback --force --backup BACKUP_ID --session SESSION_ID
 migration-assistant rollback --manual --session SESSION_ID
 ```
 
-## ⚡ Performance Issues
+##  Performance Issues
 
 ### Slow Transfer Speeds
 **Issue**: File transfers are slower than expected
@@ -459,7 +459,7 @@ database_migration:
   skip_triggers: true
 ```
 
-## 🌐 API-Specific Issues
+##  API-Specific Issues
 
 ### API Server Won't Start
 **Issue**: "Address already in use" or server startup fails
@@ -654,7 +654,7 @@ transfer:
     resolve_symlinks: true
 ```
 
-## 📊 Logging and Debugging
+##  Logging and Debugging
 
 ### Enable Debug Logging
 ```bash

@@ -4,28 +4,28 @@ A simple, production-ready tool for transferring websites and databases between 
 
 ## Features
 
-### 🚀 **Enterprise-Grade CMS Migration**
+### **Enterprise-Grade CMS Migration**
 - **12+ CMS Platforms**: WordPress, Drupal, Joomla, Magento, Shopware, PrestaShop, OpenCart, Ghost, Craft CMS, TYPO3, Concrete5, Umbraco
 - **Intelligent Orchestration**: AI-powered migration planning with dependency resolution
 - **Real-time Monitoring**: Live progress tracking with performance analytics
 - **Health Validation**: Comprehensive pre/post-migration health checks with scoring
 - **Security Analysis**: Automated vulnerability scanning and permission validation
 
-### 🔧 **Advanced Migration Capabilities**
+### **Advanced Migration Capabilities**
 - **Same-Platform Migrations**: Server-to-server moves with optimization
 - **Cross-Platform Migrations**: Content transformation and data mapping
 - **Pause/Resume/Cancel**: Full migration control with rollback support
 - **Background Processing**: Non-blocking execution with streaming updates
 - **Performance Optimization**: Automatic bottleneck detection and recommendations
 
-### 🛠 **Technical Excellence**
+### **Technical Excellence**
 - **Same-Type Database Transfers**: MySQL, PostgreSQL, MongoDB, SQLite, Redis
 - **Multiple Transfer Methods**: SSH/SCP, FTP/SFTP, Rsync, Cloud storage (AWS S3, Google Cloud, Azure)
 - **Control Panel Integration**: cPanel, Plesk, DirectAdmin, CyberPanel, WHM
 - **High Performance**: Go-powered engine with Python orchestration
 - **RESTful API**: Comprehensive API with real-time streaming support
 
-### 🔒 **Security & Reliability**
+### **Security & Reliability**
 - **Encrypted Transfers**: End-to-end encryption with integrity verification
 - **Automated Backups**: Smart backup strategies with rollback capabilities
 - **Error Recovery**: Intelligent retry logic with exponential backoff
@@ -194,25 +194,25 @@ transfer:
 
 ## Documentation
 
-### 📚 **User Guides**
+### **User Guides**
 - [Getting Started Guide](docs/user-guide/getting-started.md)
 - [Advanced CMS Migration Guide](docs/user-guide/advanced-cms-migration.md)
 - [CLI Reference](docs/user-guide/cli-guide.md)
 - [Migration Best Practices](docs/user-guide/best-practices.md)
 
-### 🔧 **Technical Documentation**
+### **Technical Documentation**
 - [CMS Platform Support](docs/cms-platforms.md) - Comprehensive platform documentation
 - [API Reference](docs/api-reference.md) - Complete REST API documentation
 - [Architecture Overview](docs/technical/architecture.md)
 - [Performance Optimization](docs/technical/performance.md)
 
-### 🚀 **Advanced Features**
+### **Advanced Features**
 - [Health Checking System](docs/advanced/health-checking.md)
 - [Migration Orchestration](docs/advanced/orchestration.md)
 - [Real-time Monitoring](docs/advanced/monitoring.md)
 - [Security Analysis](docs/advanced/security.md)
 
-### 📋 **Migration Guides**
+### **Migration Guides**
 - [WordPress Migrations](docs/migration-guides/wordpress.md)
 - [E-commerce Platform Migrations](docs/migration-guides/ecommerce.md)
 - [Cross-Platform Migrations](docs/migration-guides/cross-platform.md)

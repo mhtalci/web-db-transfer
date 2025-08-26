@@ -69,7 +69,7 @@ checklist = CMSMigrationPlanner.generate_migration_checklist(
 )
 
 for item in checklist:
-    priority_icon = {"critical": "🚨", "high": "⚠️", "medium": "📋", "low": "ℹ️"}
+    priority_icon = {"critical": "", "high": "⚠️", "medium": "📋", "low": "ℹ️"}
     icon = priority_icon.get(item['priority'], "•")
     print(f"{icon} [{item['category']}] {item['task']} ({item['estimated_time']}m)")
 ```
@@ -100,7 +100,7 @@ for issue in health_result['issues']:
     print(f"{color}[{issue['severity'].upper()}]\033[0m {issue['category']}: {issue['message']}")
     
     if issue['fix_suggestion']:
-        print(f"  💡 Fix: {issue['fix_suggestion']}")
+        print(f"   Fix: {issue['fix_suggestion']}")
 ```
 
 ### 2. Security Analysis
@@ -115,10 +115,10 @@ print("Security Analysis:")
 print(f"  Issues Found: {len(security_check['issues'])}")
 
 for issue in security_check['issues']:
-    print(f"  🔒 {issue}")
+    print(f"   {issue}")
 
 for recommendation in security_check['recommendations']:
-    print(f"  💡 {recommendation}")
+    print(f"   {recommendation}")
 
 # Scan configuration files for sensitive data
 config_files = ["wp-config.php", "configuration.php", ".env"]
@@ -277,13 +277,13 @@ await monitor.start_monitoring(interval=3.0)  # Check every 3 seconds
 current_metrics = monitor.get_current_metrics()
 
 if current_metrics['system_metrics']['memory_usage_percent'] > 80:
-    print("🔧 Memory optimization needed:")
+    print(" Memory optimization needed:")
     print("  - Reduce concurrent operations")
     print("  - Enable streaming for large files")
     print("  - Implement memory-mapped file processing")
 
 if current_metrics['average_throughput_mbps'] < 5.0:
-    print("🔧 Throughput optimization needed:")
+    print(" Throughput optimization needed:")
     print("  - Check network connectivity")
     print("  - Enable compression")
     print("  - Use parallel processing")
@@ -294,7 +294,7 @@ report = monitor.generate_performance_report()
 print(f"Performance Grade: {report['performance_statistics']['performance_grade']}")
 
 for recommendation in report['recommendations']:
-    print(f"💡 {recommendation}")
+    print(f" {recommendation}")
 ```
 
 ## Security Considerations
@@ -315,7 +315,7 @@ security_checklist = [
 ]
 
 for item in security_checklist:
-    print(f"🔒 {item}")
+    print(f" {item}")
 ```
 
 ### 2. Secure Migration Execution
@@ -357,13 +357,13 @@ async def monitor_migration_progress(migration_id):
         status = await orchestrator.get_migration_status(migration_id)
         
         if status.get('error'):
-            print(f"❌ Migration Error: {status['error']}")
+            print(f" Migration Error: {status['error']}")
             break
             
         progress = status.get('overall_progress', 0)
         current_step = status.get('current_stage', 'unknown')
         
-        print(f"📊 Progress: {progress:.1f}% - Stage: {current_step}")
+        print(f" Progress: {progress:.1f}% - Stage: {current_step}")
         
         # Check for performance issues
         if 'performance' in status:
@@ -376,7 +376,7 @@ async def monitor_migration_progress(migration_id):
         
         # Check if complete
         if progress >= 100:
-            print("✅ Migration completed successfully!")
+            print(" Migration completed successfully!")
             break
             
         await asyncio.sleep(5)  # Check every 5 seconds
@@ -443,21 +443,21 @@ async def diagnose_database_connection(db_config):
     try:
         # Test basic connectivity
         connection = await create_database_connection(db_config)
-        print("✅ Database connection successful")
+        print(" Database connection successful")
         
         # Test permissions
         await test_database_permissions(connection)
-        print("✅ Database permissions verified")
+        print(" Database permissions verified")
         
         # Test performance
         latency = await measure_database_latency(connection)
-        print(f"📊 Database latency: {latency}ms")
+        print(f" Database latency: {latency}ms")
         
         if latency > 100:
             print("⚠️ High database latency detected")
             
     except Exception as e:
-        print(f"❌ Database connection failed: {e}")
+        print(f" Database connection failed: {e}")
         
         # Provide troubleshooting suggestions
         suggestions = [
@@ -469,7 +469,7 @@ async def diagnose_database_connection(db_config):
         ]
         
         for suggestion in suggestions:
-            print(f"💡 {suggestion}")
+            print(f" {suggestion}")
 ```
 
 #### File Permission Issues
@@ -501,10 +501,10 @@ async def fix_permission_issues(path):
             if file_path.exists():
                 file_path.chmod(stat.S_IRUSR | stat.S_IWUSR)
         
-        print("✅ File permissions corrected")
+        print(" File permissions corrected")
         
     except Exception as e:
-        print(f"❌ Failed to fix permissions: {e}")
+        print(f" Failed to fix permissions: {e}")
 ```
 
 ### 2. Migration Recovery
@@ -525,7 +525,7 @@ async def recover_failed_migration(migration_id):
     
     print(f"Found {len(failed_steps)} failed steps:")
     for step in failed_steps:
-        print(f"  ❌ {step['name']}: {step.get('error_message', 'Unknown error')}")
+        print(f"   {step['name']}: {step.get('error_message', 'Unknown error')}")
     
     # Attempt automatic recovery
     recovery_strategies = {
@@ -539,7 +539,7 @@ async def recover_failed_migration(migration_id):
         error_type = classify_error(step.get('error_message', ''))
         strategy = recovery_strategies.get(error_type, 'manual_intervention_required')
         
-        print(f"🔧 Recovery strategy for {step['name']}: {strategy}")
+        print(f" Recovery strategy for {step['name']}: {strategy}")
         
         if strategy != 'manual_intervention_required':
             await execute_recovery_strategy(migration_id, step['id'], strategy)
@@ -602,7 +602,7 @@ execution_best_practices = [
     'Have technical team on standby'
 ]
 
-print("🚀 During Migration:")
+print(" During Migration:")
 for practice in execution_best_practices:
     print(f"  ✓ {practice}")
 ```
@@ -673,7 +673,7 @@ maintenance_schedule = {
     ]
 }
 
-print("🔧 Ongoing Maintenance Schedule:")
+print(" Ongoing Maintenance Schedule:")
 for frequency, tasks in maintenance_schedule.items():
     print(f"\n{frequency}:")
     for task in tasks:

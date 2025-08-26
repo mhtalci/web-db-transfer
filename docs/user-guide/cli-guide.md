@@ -13,7 +13,7 @@ The Migration Assistant CLI provides an interactive, user-friendly interface for
 - [Monitoring and Status](#monitoring-and-status)
 - [Advanced Features](#advanced-features)
 
-## 🚀 Basic Usage
+##  Basic Usage
 
 ### Getting Help
 ```bash
@@ -59,11 +59,11 @@ migration-assistant migrate
 
 #### Step 1: Welcome and Overview
 ```
-🚀 Web & Database Migration Assistant
+ Web & Database Migration Assistant
    Version 1.0.0
    A comprehensive tool for migrating web applications and databases
 
-✨ Features:                    🎯 Quick Actions:
+✨ Features:                     Quick Actions:
 • Interactive CLI              migration-assistant help --interactive
 • REST API with async support  migration-assistant presets
 • Multiple database types      migration-assistant migrate
@@ -110,13 +110,13 @@ Username: db_user
 Password: [hidden]
 Database Name: my_website_db
 
-🔍 Testing connection... ✅ Connected successfully!
-📊 Found 15 tables, 1.2GB of data
+ Testing connection...  Connected successfully!
+ Found 15 tables, 1.2GB of data
 ```
 
 #### Step 4: Destination System Configuration
 ```
-🎯 Destination System Configuration
+ Destination System Configuration
 
 Select your destination system type:
 ❯ AWS S3 + RDS
@@ -146,10 +146,10 @@ Available methods for your configuration:
   Direct Database Migration
 
 Performance Options:
-✅ Enable compression
-✅ Parallel transfers (4 threads)
-✅ Resume on interruption
-✅ Verify checksums
+ Enable compression
+ Parallel transfers (4 threads)
+ Resume on interruption
+ Verify checksums
 ```
 
 #### Step 6: Safety and Backup Options
@@ -157,19 +157,19 @@ Performance Options:
 🛡️ Safety and Backup Options
 
 Backup Settings:
-✅ Create backup before migration
-✅ Verify backup integrity
-✅ Keep backups for 30 days
+ Create backup before migration
+ Verify backup integrity
+ Keep backups for 30 days
 
 Rollback Settings:
-✅ Enable automatic rollback on failure
-✅ Create rollback plan
-✅ Test rollback procedure
+ Enable automatic rollback on failure
+ Create rollback plan
+ Test rollback procedure
 
 Validation Settings:
-✅ Pre-migration validation
-✅ Post-migration verification
-✅ Data integrity checks
+ Pre-migration validation
+ Post-migration verification
+ Data integrity checks
 ```
 
 #### Step 7: Review and Confirmation
@@ -190,7 +190,7 @@ Transfer: Hybrid Sync with Go acceleration
 
 Safety: Full backup + automatic rollback enabled
 
-✅ All validations passed
+ All validations passed
 ⚠️  1 warning: Large file detected (video.mp4 - 500MB)
 
 Continue with migration? [Y/n]:
@@ -198,7 +198,7 @@ Continue with migration? [Y/n]:
 
 #### Step 8: Execution with Progress
 ```
-🚀 Starting Migration: WordPress to AWS
+ Starting Migration: WordPress to AWS
 
 [1/8] Creating backups...                    ████████████████████ 100% 0:02:15
 [2/8] Validating configuration...            ████████████████████ 100% 0:00:30
@@ -209,16 +209,16 @@ Continue with migration? [Y/n]:
 [7/8] Running post-migration tests...        ████████████████████ 100% 0:03:12
 [8/8] Generating report...                   ████████████████████ 100% 0:00:45
 
-✅ Migration completed successfully!
-📊 Total time: 28 minutes 32 seconds
+ Migration completed successfully!
+ Total time: 28 minutes 32 seconds
 📈 Transfer rate: 2.1 MB/s average
-🎯 All verification checks passed
+ All verification checks passed
 
 📄 Detailed report saved to: migration-report-20240826-143022.html
 🔗 New site URL: https://my-new-website-bucket.s3-website-us-east-1.amazonaws.com
 ```
 
-## 📚 Command Reference
+##  Command Reference
 
 ### migrate
 Start a migration process with various options:
@@ -552,15 +552,15 @@ export SMTP_PASSWORD="your_smtp_password"
 migration-assistant config --validate my-config.yaml
 
 # Output:
-✅ Configuration is valid
-📊 Found 1 source system (WordPress)
-📊 Found 1 destination system (AWS S3)
-📊 Transfer method: hybrid_sync
+ Configuration is valid
+ Found 1 source system (WordPress)
+ Found 1 destination system (AWS S3)
+ Transfer method: hybrid_sync
 ⚠️  Warning: Large parallel_transfers value may impact performance
-💡 Suggestion: Consider reducing parallel_transfers to 2-4 for better stability
+ Suggestion: Consider reducing parallel_transfers to 2-4 for better stability
 ```
 
-## 🎯 Preset Management
+##  Preset Management
 
 ### Built-in Presets
 ```bash
@@ -629,7 +629,7 @@ migration-assistant presets --share my-custom-preset
 # Output: https://presets.migration-assistant.com/share/abc123
 ```
 
-## 🔍 Validation and Testing
+##  Validation and Testing
 
 ### Pre-Migration Validation
 ```bash
@@ -637,16 +637,16 @@ migration-assistant presets --share my-custom-preset
 migration-assistant validate --quick --config my-config.yaml
 
 # Output:
-🔍 Quick Validation Results:
+ Quick Validation Results:
 
-✅ Source connectivity (old-server.com:22)
-✅ Source database connectivity (MySQL)
-✅ Destination connectivity (AWS S3)
-✅ Destination database connectivity (Aurora MySQL)
-✅ Required tools available (rsync, mysql, aws-cli)
-✅ Sufficient disk space (10GB available, 4GB required)
+ Source connectivity (old-server.com:22)
+ Source database connectivity (MySQL)
+ Destination connectivity (AWS S3)
+ Destination database connectivity (Aurora MySQL)
+ Required tools available (rsync, mysql, aws-cli)
+ Sufficient disk space (10GB available, 4GB required)
 
-🎯 Ready to proceed with migration!
+ Ready to proceed with migration!
 ```
 
 ### Detailed Validation
@@ -658,45 +658,45 @@ migration-assistant validate --detailed --config my-config.yaml
 📋 Detailed Validation Report:
 
 🔗 Connectivity Tests:
-  ✅ Source SSH connection (old-server.com:22) - 45ms
-  ✅ Source MySQL connection (old-server.com:3306) - 23ms
-  ✅ AWS S3 bucket access (my-new-website) - 156ms
-  ✅ Aurora MySQL cluster access (my-website-cluster) - 89ms
+   Source SSH connection (old-server.com:22) - 45ms
+   Source MySQL connection (old-server.com:3306) - 23ms
+   AWS S3 bucket access (my-new-website) - 156ms
+   Aurora MySQL cluster access (my-website-cluster) - 89ms
 
-🔧 System Requirements:
-  ✅ Python 3.11+ (found 3.11.5)
-  ✅ Go 1.21+ (found 1.21.3)
-  ✅ rsync (found 3.2.7)
-  ✅ mysql client (found 8.0.34)
-  ✅ aws-cli (found 2.13.25)
+ System Requirements:
+   Python 3.11+ (found 3.11.5)
+   Go 1.21+ (found 1.21.3)
+   rsync (found 3.2.7)
+   mysql client (found 8.0.34)
+   aws-cli (found 2.13.25)
 
 💾 Storage Analysis:
-  ✅ Source disk usage: 4.2GB (15,847 files)
-  ✅ Available temp space: 25GB
-  ✅ Destination storage: Unlimited (S3)
+   Source disk usage: 4.2GB (15,847 files)
+   Available temp space: 25GB
+   Destination storage: Unlimited (S3)
   ⚠️  Large files detected: 3 files > 100MB
 
 🗄️ Database Analysis:
-  ✅ Source: MySQL 8.0.34 (15 tables, 1.2GB)
-  ✅ Destination: Aurora MySQL 8.0 compatible
-  ✅ Schema compatibility: 100%
-  ✅ Character set compatibility: utf8mb4
+   Source: MySQL 8.0.34 (15 tables, 1.2GB)
+   Destination: Aurora MySQL 8.0 compatible
+   Schema compatibility: 100%
+   Character set compatibility: utf8mb4
 
 🔐 Security Checks:
-  ✅ SSH key authentication configured
-  ✅ Database connections encrypted
-  ✅ AWS credentials valid
+   SSH key authentication configured
+   Database connections encrypted
+   AWS credentials valid
   ⚠️  Source server allows password authentication
 
-📊 Performance Estimates:
+ Performance Estimates:
   🕐 Estimated migration time: 35-45 minutes
   📈 Expected transfer rate: 2-3 MB/s
   💰 Estimated AWS costs: $0.15 for transfer
 
-🎯 Recommendations:
-  💡 Enable Go acceleration for 2x faster transfers
-  💡 Consider disabling password auth on source server
-  💡 Schedule migration during low-traffic hours
+ Recommendations:
+   Enable Go acceleration for 2x faster transfers
+   Consider disabling password auth on source server
+   Schedule migration during low-traffic hours
 ```
 
 ### Dry Run Testing
@@ -712,18 +712,18 @@ migration-assistant migrate --dry-run --config my-config.yaml
       🗄️ Database: /tmp/backup-20240826-143022-db.sql (1.2GB)
 
 [2/8] Would validate all connections and requirements
-      ✅ All validations would pass
+       All validations would pass
 
 [3/8] Would create S3 bucket: my-new-website
       📍 Region: us-east-1
-      🔒 Encryption: AES-256
+       Encryption: AES-256
 
 [4/8] Would migrate database (15 tables)
-      📊 Estimated time: 8-12 minutes
+       Estimated time: 8-12 minutes
       🔄 Method: mysqldump + mysql restore
 
 [5/8] Would transfer files (15,847 files)
-      📊 Estimated time: 20-25 minutes
+       Estimated time: 20-25 minutes
       🔄 Method: hybrid_sync (Go accelerated)
 
 [6/8] Would update configuration files
@@ -731,18 +731,18 @@ migration-assistant migrate --dry-run --config my-config.yaml
       📝 .htaccess URL redirects
 
 [7/8] Would run verification tests
-      🔍 Database integrity checks
-      🔍 File checksum verification
-      🔍 Website functionality tests
+       Database integrity checks
+       File checksum verification
+       Website functionality tests
 
 [8/8] Would generate migration report
       📄 HTML report with detailed results
 
-✅ Dry run completed successfully!
-💡 Run without --dry-run to execute actual migration
+ Dry run completed successfully!
+ Run without --dry-run to execute actual migration
 ```
 
-## 📊 Monitoring and Status
+##  Monitoring and Status
 
 ### Real-time Status Monitoring
 ```bash
@@ -750,9 +750,9 @@ migration-assistant migrate --dry-run --config my-config.yaml
 migration-assistant status --watch --session abc123
 
 # Output (updates every 5 seconds):
-🚀 Migration Status: abc123
+ Migration Status: abc123
 
-📊 Overall Progress: ████████████████████ 65% (5/8 steps completed)
+ Overall Progress: ████████████████████ 65% (5/8 steps completed)
 ⏱️  Elapsed Time: 18m 32s
 ⏱️  Estimated Remaining: 12m 15s
 
@@ -762,8 +762,8 @@ Rate: 2.3 MB/s (avg: 2.1 MB/s)
 ETA: 8m 45s
 
 📁 Files: 12,847 / 15,847 transferred
-🗄️ Database: ✅ Completed (8m 22s)
-🔍 Verification: ⏳ Pending
+🗄️ Database:  Completed (8m 22s)
+ Verification: ⏳ Pending
 
 Recent Activity:
 18:45:23 - Transferred wp-content/uploads/2024/08/image.jpg (2.1MB)
@@ -792,10 +792,10 @@ Recent Migrations:
 └─────────────┴──────────────────────┴──────────┴─────────────┴──────────────┘
 
 Summary:
-✅ Completed: 2 migrations
+ Completed: 2 migrations
 🔄 Running: 1 migration
-❌ Failed: 1 migration
-📊 Success Rate: 66.7%
+ Failed: 1 migration
+ Success Rate: 66.7%
 ```
 
 ### Detailed Session Information
@@ -821,10 +821,10 @@ Configuration:
   Verification: Enabled
 
 Progress Details:
-  [✅] 1. Create backups (2m 15s)
-  [✅] 2. Validate configuration (30s)
-  [✅] 3. Setup destination (1m 45s)
-  [✅] 4. Migrate database (8m 22s)
+  [] 1. Create backups (2m 15s)
+  [] 2. Validate configuration (30s)
+  [] 3. Setup destination (1m 45s)
+  [] 4. Migrate database (8m 22s)
   [🔄] 5. Transfer files (6m 20s / ~15m) - 78%
   [⏳] 6. Update configurations
   [⏳] 7. Run verification tests
@@ -844,7 +844,7 @@ Recent Logs:
   18:45:20 WARN  - Retrying transfer for large-file.mp4 (attempt 2/3)
 ```
 
-## 🚀 Advanced Features
+##  Advanced Features
 
 ### Parallel Processing
 ```bash

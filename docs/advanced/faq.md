@@ -13,7 +13,7 @@ This FAQ covers common questions about the Web & Database Migration Assistant, i
 - [API and Integration](#api-and-integration)
 - [Pricing and Licensing](#pricing-and-licensing)
 
-## 🌐 General Questions
+##  General Questions
 
 ### What is the Web & Database Migration Assistant?
 The Web & Database Migration Assistant is a comprehensive Python-based tool that provides both CLI and API interfaces for migrating web applications and databases between different systems, platforms, and environments. It supports various source and destination types including control panels (cPanel, DirectAdmin, Plesk), cloud platforms (AWS, GCP, Azure), and containerized environments.
@@ -43,7 +43,7 @@ Yes, the Migration Assistant is designed for enterprise use with features like:
 **Destination Systems**: AWS, Google Cloud, Azure, DigitalOcean, custom servers, containers
 **Databases**: MySQL, PostgreSQL, MongoDB, Redis, SQLite, cloud databases
 
-## 🚀 Installation and Setup
+##  Installation and Setup
 
 ### What are the system requirements?
 **Minimum Requirements**:
@@ -147,7 +147,7 @@ DNS migration features include:
 - Automatic record creation and validation
 - Optional nameserver updates
 
-## ⚡ Performance and Scalability
+##  Performance and Scalability
 
 ### How fast are migrations?
 Performance depends on several factors:
@@ -225,7 +225,7 @@ Partial support for air-gapped environments:
 - **Go binaries**: Can be compiled and distributed separately
 - **Limitations**: Cloud migrations require internet connectivity
 
-## 🔧 Troubleshooting
+##  Troubleshooting
 
 ### What should I do if a migration fails?
 **Immediate Steps**:
@@ -260,7 +260,7 @@ Yes, rollback capabilities include:
 - **GitHub Discussions**: Community support and questions
 - **Enterprise Support**: Professional support for enterprise customers
 
-## 🌐 API and Integration
+##  API and Integration
 
 ### Is there a REST API?
 Yes, a comprehensive REST API built with FastAPI:

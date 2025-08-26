@@ -30,7 +30,7 @@ The Migration Assistant uses a hybrid architecture that combines:
 - **Memory efficiency** through streaming and chunked processing
 - **Resource monitoring** and automatic optimization
 
-## 🚀 Go Performance Engine
+##  Go Performance Engine
 
 ### Enabling Go Acceleration
 ```yaml
@@ -205,7 +205,7 @@ def stream_database_rows(query, batch_size=1000):
         offset += batch_size
 ```
 
-## 🌐 Network Optimization
+##  Network Optimization
 
 ### Transfer Method Selection
 ```yaml
@@ -547,7 +547,7 @@ class MemoryManager:
         gc.set_threshold(700, 10, 10)  # More aggressive GC
 ```
 
-## 📊 Monitoring and Profiling
+##  Monitoring and Profiling
 
 ### Performance Monitoring
 ```yaml
@@ -721,7 +721,7 @@ docker_optimization:
     BUILDKIT_INLINE_CACHE: 1
 ```
 
-## 🎯 Performance Benchmarking
+##  Performance Benchmarking
 
 ### Benchmark Configuration
 ```yaml

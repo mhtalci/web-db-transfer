@@ -15,7 +15,7 @@ Welcome to the Web & Database Migration Assistant! This guide will help you get 
 - **Docker**: For containerized migrations and testing
 - **Cloud CLI Tools**: AWS CLI, gcloud, Azure CLI (for cloud migrations)
 
-## 🚀 Installation
+##  Installation
 
 ### Option 1: Install from PyPI (Recommended)
 ```bash
@@ -45,7 +45,7 @@ docker pull migration-assistant/migration-assistant:latest
 docker run -it migration-assistant/migration-assistant:latest migration-assistant --help
 ```
 
-## ✅ Verify Installation
+##  Verify Installation
 
 ```bash
 # Check version
@@ -61,10 +61,10 @@ migration-assistant --help
 Expected output:
 ```
 Migration Assistant version 1.0.0
-✅ All components initialized successfully
+ All components initialized successfully
 ```
 
-## 🎯 Your First Migration
+##  Your First Migration
 
 ### Step 1: Interactive Migration Wizard
 ```bash
@@ -136,7 +136,7 @@ Run the migration:
 migration-assistant migrate --config my-migration.yaml
 ```
 
-## 🌐 API Quick Start
+##  API Quick Start
 
 ### Start the API Server
 ```bash
@@ -189,7 +189,7 @@ status = requests.get(f'http://localhost:8000/migrations/{session_id}/status')
 print(status.json())
 ```
 
-## 🔧 Configuration
+##  Configuration
 
 ### Environment Variables
 ```bash
@@ -267,7 +267,7 @@ For VS Code users, recommended extensions:
 - Docker
 - REST Client
 
-## 🚨 Common Issues
+##  Common Issues
 
 ### Installation Issues
 **Problem**: `pip install` fails with compilation errors
@@ -312,7 +312,7 @@ ssh -L 3306:remote-db:3306 user@jump-server
 migration-assistant migrate --timeout 300 --retries 3
 ```
 
-## 📚 Next Steps
+##  Next Steps
 
 Now that you have the Migration Assistant installed and running:
 

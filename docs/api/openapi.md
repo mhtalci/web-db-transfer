@@ -13,7 +13,7 @@ The Migration Assistant API provides a comprehensive REST interface with auto-ge
 - [Rate Limiting](#rate-limiting)
 - [Webhooks](#webhooks)
 
-## 🌐 API Overview
+##  API Overview
 
 ### Base Information
 - **OpenAPI Version**: 3.0.3
@@ -386,7 +386,7 @@ curl -H "X-API-Key: your-api-key-here" \
   http://localhost:8000/migrations/
 ```
 
-## 🔧 Core Resources
+##  Core Resources
 
 ### Migrations Resource
 
@@ -709,7 +709,7 @@ Content-Type: application/json
 }
 ```
 
-## ⚡ Rate Limiting
+##  Rate Limiting
 
 ### Rate Limit Headers
 All API responses include rate limiting headers:
@@ -838,7 +838,7 @@ X-RateLimit-Window: 3600
 }
 ```
 
-## 📊 OpenAPI Tools and Integration
+##  OpenAPI Tools and Integration
 
 ### Code Generation
 Generate client SDKs using OpenAPI generators:

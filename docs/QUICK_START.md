@@ -2,7 +2,7 @@
 
 Get up and running with the CMS Migration Assistant in under 10 minutes! This guide covers the most common migration scenarios with step-by-step instructions.
 
-## 🚀 Installation
+##  Installation
 
 ### Prerequisites
 - Python 3.8+
@@ -20,10 +20,10 @@ cd web-db-transfer
 pip install -e .
 
 # Verify installation
-python -c "from migration_assistant.platforms.factory import PlatformAdapterFactory; print('✅ Installation successful!')"
+python -c "from migration_assistant.platforms.factory import PlatformAdapterFactory; print(' Installation successful!')"
 ```
 
-## 🔍 Quick Platform Detection
+##  Quick Platform Detection
 
 Detect what CMS platform you're working with:
 
@@ -51,12 +51,12 @@ path = Path("/path/to/your/cms")
 adapter = await PlatformAdapterFactory.detect_platform(path, config)
 
 if adapter:
-    print(f"✅ Detected: {adapter.platform_type}")
+    print(f" Detected: {adapter.platform_type}")
     info = await adapter.analyze_platform(path)
     print(f"   Version: {info.version}")
     print(f"   Database: {info.database_type}")
 else:
-    print("❌ No supported CMS platform detected")
+    print(" No supported CMS platform detected")
 ```
 
 ## 🏥 Quick Health Check
@@ -80,7 +80,7 @@ critical_issues = [
 ]
 
 if critical_issues:
-    print("\n🚨 Critical Issues:")
+    print("\n Critical Issues:")
     for issue in critical_issues:
         print(f"   • {issue['message']}")
         if issue['fix_suggestion']:
@@ -164,7 +164,7 @@ print(f"E-commerce migration planned: {plan.id}")
 print("Will migrate: products, customers, orders, SEO URLs")
 ```
 
-## 🌐 Quick API Usage
+##  Quick API Usage
 
 Start the API server and use REST endpoints:
 
@@ -203,7 +203,7 @@ curl -X POST "http://localhost:8000/api/v1/cms/migration/plan" \
   }'
 ```
 
-## 📊 Quick Performance Monitoring
+##  Quick Performance Monitoring
 
 Monitor migration performance in real-time:
 
@@ -228,7 +228,7 @@ print(f"Files Processed: {metrics['files_processed']:,}")
 print(f"Throughput: {metrics['average_throughput_mbps']:.2f} MB/s")
 ```
 
-## 🔒 Quick Security Check
+##  Quick Security Check
 
 Perform security analysis:
 
@@ -239,18 +239,18 @@ from migration_assistant.utils.cms_utils import CMSSecurityAnalyzer
 permission_check = CMSSecurityAnalyzer.check_file_permissions(Path("/var/www/wordpress"))
 
 if permission_check['issues']:
-    print("🔒 Security Issues Found:")
+    print(" Security Issues Found:")
     for issue in permission_check['issues']:
         print(f"   • {issue}")
     
-    print("\n💡 Recommendations:")
+    print("\n Recommendations:")
     for rec in permission_check['recommendations']:
         print(f"   • {rec}")
 else:
-    print("✅ No security issues found")
+    print(" No security issues found")
 ```
 
-## 🎯 Common Use Cases
+##  Common Use Cases
 
 ### 1. Server Migration Checklist
 ```python
@@ -260,12 +260,12 @@ async def quick_server_migration(source_path, destination_path):
     
     # 1. Detect platform
     adapter = await PlatformAdapterFactory.detect_platform(source_path, config)
-    print(f"✅ Detected: {adapter.platform_type}")
+    print(f" Detected: {adapter.platform_type}")
     
     # 2. Health check
     checker = CMSHealthChecker(adapter.platform_type, source_path)
     health = await checker.run_health_check()
-    print(f"✅ Health Score: {health['health_score']}/100")
+    print(f" Health Score: {health['health_score']}/100")
     
     # 3. Create migration plan
     orchestrator = CMSMigrationOrchestrator()
@@ -274,15 +274,15 @@ async def quick_server_migration(source_path, destination_path):
         source_path, destination_path,
         {'create_backup': True}
     )
-    print(f"✅ Migration Plan: {plan.id}")
+    print(f" Migration Plan: {plan.id}")
     
     # 4. Execute migration
-    print("🚀 Starting migration...")
+    print(" Starting migration...")
     async for progress in orchestrator.execute_migration(plan.id):
         if 'progress' in progress:
             print(f"   {progress['progress']:.1f}% - {progress['message']}")
     
-    print("✅ Migration completed!")
+    print(" Migration completed!")
 
 # Usage
 await quick_server_migration(
@@ -323,11 +323,11 @@ for source in platforms:
             compatible = PlatformAdapterFactory.validate_platform_compatibility(source, dest)
             complexity = PlatformAdapterFactory.get_migration_complexity(source, dest)
             
-            status = "✅" if compatible else "❌"
+            status = "" if compatible else ""
             print(f"{source:10} → {dest:10} | {status:8} | {complexity}")
 ```
 
-## 🚨 Quick Troubleshooting
+##  Quick Troubleshooting
 
 ### Common Issues and Solutions
 
@@ -355,7 +355,7 @@ health_result = await checker.run_health_check()
 critical_issues = [i for i in health_result['issues'] if i['severity'] == 'critical']
 
 for issue in critical_issues:
-    print(f"🚨 CRITICAL: {issue['message']}")
+    print(f" CRITICAL: {issue['message']}")
     if issue['fix_suggestion']:
         print(f"   Fix: {issue['fix_suggestion']}")
 ```
@@ -371,10 +371,10 @@ failed_steps = [s for s in status['steps'] if s['status'] == 'failed']
 if failed_steps:
     print("Failed steps:")
     for step in failed_steps:
-        print(f"  ❌ {step['name']}: {step.get('error_message', 'Unknown error')}")
+        print(f"   {step['name']}: {step.get('error_message', 'Unknown error')}")
 ```
 
-## 📚 Next Steps
+##  Next Steps
 
 Once you're comfortable with the basics:
 
@@ -392,4 +392,4 @@ Once you're comfortable with the basics:
 
 ---
 
-**🎉 Congratulations!** You're now ready to perform enterprise-grade CMS migrations with confidence!
+** Congratulations!** You're now ready to perform enterprise-grade CMS migrations with confidence!

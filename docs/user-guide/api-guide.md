@@ -15,7 +15,7 @@ The Migration Assistant provides a comprehensive REST API built with FastAPI, of
 - [SDK and Client Libraries](#sdk-and-client-libraries)
 - [Advanced Features](#advanced-features)
 
-## 🌐 API Overview
+##  API Overview
 
 ### Base Information
 - **Base URL**: `http://localhost:8000` (default)
@@ -94,7 +94,7 @@ headers = {
 response = requests.get('http://localhost:8000/migrations/', headers=headers)
 ```
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Start the API Server
 ```bash
@@ -226,7 +226,7 @@ while True:
 print("Migration finished!")
 ```
 
-## 🔧 Core Endpoints
+##  Core Endpoints
 
 ### Root Endpoint
 ```http
@@ -698,7 +698,7 @@ Initiates rollback of a completed or failed migration.
 }
 ```
 
-## 📊 Monitoring and Status
+##  Monitoring and Status
 
 ### Real-time Progress with WebSockets
 ```javascript
@@ -817,7 +817,7 @@ Returns detailed performance metrics for a migration.
 }
 ```
 
-## ❌ Error Handling
+##  Error Handling
 
 ### Error Response Format
 All API errors follow a consistent format:
@@ -993,7 +993,7 @@ def create_migration_with_retry(config, max_retries=3):
     raise Exception(f"Failed to create migration after {max_retries} attempts")
 ```
 
-## 📚 SDK and Client Libraries
+##  SDK and Client Libraries
 
 ### Python SDK
 ```python
@@ -1137,7 +1137,7 @@ func main() {
 }
 ```
 
-## 🚀 Advanced Features
+##  Advanced Features
 
 ### Batch Operations
 ```http

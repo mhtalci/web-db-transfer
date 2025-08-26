@@ -2,7 +2,7 @@
 
 Welcome to the comprehensive documentation for the Web & Database Migration Assistant - a powerful Python-based tool that provides both CLI and API interfaces for migrating web applications and databases between different systems, platforms, and environments.
 
-## 📚 Documentation Structure
+##  Documentation Structure
 
 ### User Guides
 - [**Getting Started**](user-guide/getting-started.md) - Quick start guide and installation
@@ -33,7 +33,7 @@ Welcome to the comprehensive documentation for the Web & Database Migration Assi
 - [**Testing**](developer/testing.md) - Testing framework and guidelines
 - [**API Development**](developer/api-development.md) - Extending the API
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Installation
 ```bash
@@ -70,7 +70,7 @@ migration-assistant serve --port 8000
 open http://localhost:8000/docs
 ```
 
-## 🎯 Key Features
+##  Key Features
 
 - **Interactive CLI** with Rich formatting and step-by-step guidance
 - **REST API** with async support and auto-generated OpenAPI documentation
@@ -87,10 +87,10 @@ open http://localhost:8000/docs
 
 ### Code Examples
 All code examples are tested and verified. Look for these indicators:
-- ✅ **Tested** - Code has been tested in the development environment
-- 🔧 **Configuration** - Configuration file examples
-- 🌐 **API** - REST API examples
-- 💻 **CLI** - Command-line interface examples
+-  **Tested** - Code has been tested in the development environment
+-  **Configuration** - Configuration file examples
+-  **API** - REST API examples
+-  **CLI** - Command-line interface examples
 
 ### Platform Support
 - 🐧 **Linux** - Fully supported

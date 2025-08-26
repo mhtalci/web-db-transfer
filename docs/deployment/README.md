@@ -13,7 +13,7 @@ This guide covers deploying the Web & Database Migration Assistant in various en
 - [Monitoring and Logging](#monitoring-and-logging)
 - [Security Considerations](#security-considerations)
 
-## 🌐 Deployment Overview
+##  Deployment Overview
 
 ### Deployment Options
 The Migration Assistant can be deployed in several ways:
@@ -732,7 +732,7 @@ logging:
   backup_count: 5
 ```
 
-## 📊 Monitoring and Logging
+##  Monitoring and Logging
 
 ### Prometheus Configuration
 ```yaml
@@ -811,7 +811,7 @@ output.elasticsearch:
 logging.level: info
 ```
 
-## 🔒 Security Considerations
+##  Security Considerations
 
 ### Security Checklist
 - [ ] Use HTTPS/TLS for all communications
