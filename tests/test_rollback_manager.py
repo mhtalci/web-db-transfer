@@ -1,564 +1,620 @@
 """
-Unit tests for the rollback manager.
-
-Tests rollback plan creation, execution, and recovery functionality.
+Integration tests for the rollback manager.
 """
 
 import asyncio
 import json
-import os
+import shutil
 import tempfile
-import uuid
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from pathlib import Path
+from unittest.mock import Mock, patch
 
 import pytest
 
-from migration_assistant.backup.rollback import RollbackManager, RollbackPlan, RollbackStatus, RollbackStep
-from migration_assistant.backup.validator import RecoveryValidator
-from migration_assistant.core.exceptions import RollbackError
-from migration_assistant.models.config import DatabaseConfig, MigrationConfig, SystemConfig, AuthConfig, PathConfig, AuthType
-from migration_assistant.models.session import BackupInfo, BackupType, MigrationSession, MigrationStatus
+from migration_assistant.checkup.backup_manager import BackupInfo, BackupManager
+from migration_assistant.checkup.rollback_manager import (
+    RecoveryValidator,
+    RollbackManager,
+    RollbackOperation,
+)
+from migration_assistant.checkup.models import CheckupConfig
+from migration_assistant.core.exceptions import BackupError
+
+
+@pytest.fixture
+def temp_dir():
+    """Create a temporary directory for testing."""
+    temp_path = Path(tempfile.mkdtemp())
+    yield temp_path
+    shutil.rmtree(temp_path, ignore_errors=True)
+
+
+@pytest.fixture
+def sample_config(temp_dir):
+    """Create a sample checkup configuration."""
+    return CheckupConfig(
+        target_directory=temp_dir / "source",
+        backup_dir=temp_dir / "backups",
+        create_backup=True,
+        dry_run=False
+    )
+
+
+@pytest.fixture
+def sample_files(temp_dir):
+    """Create sample files for testing."""
+    source_dir = temp_dir / "source"
+    source_dir.mkdir(parents=True)
+    
+    # Create some Python files
+    (source_dir / "main.py").write_text("print('Hello, World!')")
+    (source_dir / "utils.py").write_text("def helper(): pass")
+    
+    # Create a subdirectory with files
+    sub_dir = source_dir / "submodule"
+    sub_dir.mkdir()
+    (sub_dir / "module.py").write_text("class TestClass: pass")
+    
+    return source_dir
+
+
+@pytest.fixture
+async def backup_manager_with_backup(sample_config, sample_files):
+    """Create a backup manager with an existing backup."""
+    manager = BackupManager(sample_config)
+    backup_info = await manager.create_full_backup()
+    return manager, backup_info
+
+
+class TestRollbackOperation:
+    """Test RollbackOperation class."""
+    
+    def test_rollback_operation_creation(self, temp_dir):
+        """Test creating RollbackOperation object."""
+        affected_files = [temp_dir / "file1.py", temp_dir / "file2.py"]
+        
+        operation = RollbackOperation(
+            operation_id="test_op",
+            operation_type="cleanup",
+            backup_id="backup_123",
+            affected_files=affected_files,
+            metadata={"test": "value"}
+        )
+        
+        assert operation.operation_id == "test_op"
+        assert operation.operation_type == "cleanup"
+        assert operation.backup_id == "backup_123"
+        assert operation.affected_files == affected_files
+        assert operation.metadata == {"test": "value"}
+        assert not operation.rollback_completed
+        assert operation.rollback_timestamp is None
+        assert operation.rollback_errors == []
+    
+    def test_rollback_operation_to_dict(self, temp_dir):
+        """Test converting RollbackOperation to dictionary."""
+        affected_files = [temp_dir / "file1.py"]
+        
+        operation = RollbackOperation(
+            operation_id="test_op",
+            operation_type="cleanup",
+            backup_id="backup_123",
+            affected_files=affected_files
+        )
+        
+        data = operation.to_dict()
+        
+        assert data["operation_id"] == "test_op"
+        assert data["operation_type"] == "cleanup"
+        assert data["backup_id"] == "backup_123"
+        assert data["affected_files"] == [str(temp_dir / "file1.py")]
+        assert not data["rollback_completed"]
+        assert data["rollback_timestamp"] is None
+    
+    def test_rollback_operation_from_dict(self, temp_dir):
+        """Test creating RollbackOperation from dictionary."""
+        data = {
+            "operation_id": "test_op",
+            "operation_type": "cleanup",
+            "backup_id": "backup_123",
+            "affected_files": [str(temp_dir / "file1.py")],
+            "timestamp": "2023-01-01T12:00:00",
+            "metadata": {"test": "value"},
+            "rollback_completed": True,
+            "rollback_timestamp": "2023-01-01T13:00:00",
+            "rollback_errors": ["error1"]
+        }
+        
+        operation = RollbackOperation.from_dict(data)
+        
+        assert operation.operation_id == "test_op"
+        assert operation.operation_type == "cleanup"
+        assert operation.backup_id == "backup_123"
+        assert operation.affected_files == [temp_dir / "file1.py"]
+        assert operation.metadata == {"test": "value"}
+        assert operation.rollback_completed
+        assert operation.rollback_timestamp == datetime(2023, 1, 1, 13, 0, 0)
+        assert operation.rollback_errors == ["error1"]
+
+
+class TestRecoveryValidator:
+    """Test RecoveryValidator class."""
+    
+    def test_recovery_validator_initialization(self, sample_config):
+        """Test RecoveryValidator initialization."""
+        validator = RecoveryValidator(sample_config)
+        assert validator.config == sample_config
+    
+    def test_can_overwrite_file(self, sample_config, sample_files):
+        """Test file overwrite capability check."""
+        validator = RecoveryValidator(sample_config)
+        
+        # Existing writable file
+        test_file = sample_files / "main.py"
+        assert validator._can_overwrite_file(test_file)
+        
+        # Non-existent file
+        non_existent = sample_files / "non_existent.py"
+        assert not validator._can_overwrite_file(non_existent)
+    
+    @pytest.mark.asyncio
+    async def test_verify_backup_integrity_valid(self, sample_config, backup_manager_with_backup):
+        """Test backup integrity verification with valid backup."""
+        manager, backup_info = backup_manager_with_backup
+        validator = RecoveryValidator(sample_config)
+        
+        is_valid = await validator._verify_backup_integrity(backup_info)
+        assert is_valid
+    
+    @pytest.mark.asyncio
+    async def test_verify_backup_integrity_missing_file(self, sample_config, backup_manager_with_backup):
+        """Test backup integrity verification with missing file."""
+        manager, backup_info = backup_manager_with_backup
+        validator = RecoveryValidator(sample_config)
+        
+        # Delete the backup file
+        backup_info.backup_path.unlink()
+        
+        is_valid = await validator._verify_backup_integrity(backup_info)
+        assert not is_valid
+    
+    @pytest.mark.asyncio
+    async def test_check_disk_space(self, sample_config, backup_manager_with_backup):
+        """Test disk space checking."""
+        manager, backup_info = backup_manager_with_backup
+        validator = RecoveryValidator(sample_config)
+        
+        has_space = await validator._check_disk_space(backup_info)
+        assert has_space  # Should have enough space for small test backup
+    
+    @pytest.mark.asyncio
+    async def test_validate_recovery_preconditions_valid(self, sample_config, backup_manager_with_backup, sample_files):
+        """Test recovery preconditions validation with valid conditions."""
+        manager, backup_info = backup_manager_with_backup
+        validator = RecoveryValidator(sample_config)
+        
+        target_files = [sample_files / "main.py", sample_files / "utils.py"]
+        
+        is_valid, errors = await validator.validate_recovery_preconditions(backup_info, target_files)
+        assert is_valid
+        assert len(errors) == 0
+    
+    @pytest.mark.asyncio
+    async def test_validate_recovery_preconditions_missing_backup(self, sample_config, sample_files):
+        """Test recovery preconditions validation with missing backup."""
+        validator = RecoveryValidator(sample_config)
+        
+        # Create fake backup info with non-existent file
+        backup_info = BackupInfo(
+            backup_id="fake",
+            backup_type="full",
+            source_path=sample_files,
+            backup_path=Path("/non/existent/backup.tar.gz"),
+            checksum="fake",
+            size=1024
+        )
+        
+        target_files = [sample_files / "main.py"]
+        
+        is_valid, errors = await validator.validate_recovery_preconditions(backup_info, target_files)
+        assert not is_valid
+        assert len(errors) > 0
+        assert any("not found" in error for error in errors)
+    
+    @pytest.mark.asyncio
+    async def test_validate_post_recovery(self, sample_config, sample_files):
+        """Test post-recovery validation."""
+        validator = RecoveryValidator(sample_config)
+        
+        # Test with existing files
+        recovered_files = [sample_files / "main.py", sample_files / "utils.py"]
+        
+        is_valid, errors = await validator.validate_post_recovery(recovered_files)
+        assert is_valid
+        assert len(errors) == 0
+        
+        # Test with missing files
+        missing_files = [sample_files / "non_existent.py"]
+        
+        is_valid, errors = await validator.validate_post_recovery(missing_files)
+        assert not is_valid
+        assert len(errors) > 0
 
 
 class TestRollbackManager:
-    """Test cases for RollbackManager."""
+    """Test RollbackManager class."""
     
-    @pytest.fixture
-    def recovery_validator(self):
-        """Create a recovery validator for testing."""
-        return RecoveryValidator()
-    
-    @pytest.fixture
-    def rollback_manager(self, recovery_validator):
-        """Create a rollback manager instance for testing."""
-        return RollbackManager(recovery_validator)
-    
-    @pytest.fixture
-    def system_config(self):
-        """Create a system configuration for testing."""
-        return SystemConfig(
-            type="wordpress",
-            host="localhost",
-            port=80,
-            authentication=AuthConfig(type=AuthType.PASSWORD, username="test", password="test"),
-            paths=PathConfig(root_path="/var/www")
-        )
-    
-    @pytest.fixture
-    def db_config(self):
-        """Create a database configuration for testing."""
-        return DatabaseConfig(
-            type="mysql",
-            name="test_db",
-            host="localhost",
-            port=3306,
-            username="test_user",
-            password="test_pass"
-        )
-    
-    @pytest.fixture
-    def migration_config(self, system_config, db_config):
-        """Create a migration configuration for testing."""
-        system_config.database = db_config
-        return MigrationConfig(
-            source=system_config,
-            destination=system_config
-        )
-    
-    @pytest.fixture
-    def backup_info(self, temp_dir):
-        """Create a backup info for testing."""
-        backup_file = os.path.join(temp_dir, "test_backup.tar.gz")
-        with open(backup_file, "w") as f:
-            f.write("backup content")
+    def test_rollback_manager_initialization(self, sample_config):
+        """Test RollbackManager initialization."""
+        backup_manager = BackupManager(sample_config)
+        rollback_manager = RollbackManager(sample_config, backup_manager)
         
-        return BackupInfo(
-            id=str(uuid.uuid4()),
-            type=BackupType.FULL,
-            source_system="wordpress",
-            location=backup_file,
-            size=len("backup content"),
-            checksum="test_checksum",
-            metadata={"backup_type": "file_archive"}
-        )
+        assert rollback_manager.config == sample_config
+        assert rollback_manager.backup_manager == backup_manager
+        assert isinstance(rollback_manager.validator, RecoveryValidator)
+        assert rollback_manager.rollback_dir.exists()
     
-    @pytest.fixture
-    def migration_session(self, migration_config, backup_info):
-        """Create a migration session for testing."""
-        session = MigrationSession(
-            id=str(uuid.uuid4()),
-            config=migration_config,
-            status=MigrationStatus.FAILED
-        )
-        session.add_backup(backup_info)
-        return session
-    
-    @pytest.fixture
-    def temp_dir(self):
-        """Create a temporary directory for testing."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            yield temp_dir
+    def test_generate_operation_id(self, sample_config):
+        """Test operation ID generation."""
+        backup_manager = BackupManager(sample_config)
+        rollback_manager = RollbackManager(sample_config, backup_manager)
+        
+        op_id = rollback_manager._generate_operation_id()
+        assert op_id.startswith("rollback_op_")
+        assert len(op_id) > len("rollback_op_")
     
     @pytest.mark.asyncio
-    async def test_create_rollback_plan(self, rollback_manager, migration_session):
-        """Test rollback plan creation."""
-        plan = await rollback_manager.create_rollback_plan(migration_session)
+    async def test_register_operation(self, sample_config, sample_files):
+        """Test registering a rollback operation."""
+        backup_manager = BackupManager(sample_config)
+        rollback_manager = RollbackManager(sample_config, backup_manager)
         
-        assert isinstance(plan, RollbackPlan)
-        assert plan.migration_session == migration_session
-        assert len(plan.steps) == len(migration_session.backups)
-        assert plan.status == RollbackStatus.PENDING
-        assert plan.estimated_duration > 0
-    
-    @pytest.mark.asyncio
-    async def test_create_rollback_plan_multiple_backups(self, rollback_manager, migration_session, temp_dir):
-        """Test rollback plan creation with multiple backups."""
-        # Add more backups
-        for i in range(2):
-            backup_file = os.path.join(temp_dir, f"backup_{i}.sql")
-            with open(backup_file, "w") as f:
-                f.write(f"database backup {i}")
-            
-            backup_info = BackupInfo(
-                id=str(uuid.uuid4()),
-                type=BackupType.FULL,
-                source_system="wordpress",
-                location=backup_file,
-                metadata={"backup_type": "database_dump", "database_type": "mysql"}
-            )
-            migration_session.add_backup(backup_info)
+        # Create a backup first
+        backup_info = await backup_manager.create_full_backup()
         
-        plan = await rollback_manager.create_rollback_plan(migration_session)
+        affected_files = [sample_files / "main.py", sample_files / "utils.py"]
+        metadata = {"test": "value"}
         
-        assert len(plan.steps) == 3  # Original + 2 new backups
-        
-        # Check that steps are ordered by backup creation time (reverse)
-        backup_times = [step.backup_info.created_at for step in plan.steps]
-        assert backup_times == sorted(backup_times, reverse=True)
-    
-    @pytest.mark.asyncio
-    async def test_validate_rollback_readiness(self, rollback_manager, migration_session):
-        """Test rollback readiness validation."""
-        with patch.object(rollback_manager.recovery_validator, 'validate_multiple_backups') as mock_validate:
-            mock_validate.return_value = {
-                migration_session.backups[0].id: MagicMock(is_valid=True)
-            }
-            
-            results = await rollback_manager.validate_rollback_readiness(migration_session)
-            
-            assert len(results) == 1
-            assert results[migration_session.backups[0].id].is_valid is True
-    
-    @pytest.mark.asyncio
-    async def test_validate_rollback_readiness_no_backups(self, rollback_manager, migration_session):
-        """Test rollback readiness validation with no backups."""
-        migration_session.backups = []
-        
-        with pytest.raises(RollbackError, match="No backups available"):
-            await rollback_manager.validate_rollback_readiness(migration_session)
-    
-    @pytest.mark.asyncio
-    async def test_execute_rollback_success(self, rollback_manager, migration_session):
-        """Test successful rollback execution."""
-        with patch.object(rollback_manager, 'validate_rollback_readiness') as mock_validate:
-            mock_validate.return_value = {
-                migration_session.backups[0].id: MagicMock(is_valid=True)
-            }
-            
-            with patch.object(rollback_manager, '_execute_rollback_step') as mock_execute:
-                mock_execute.return_value = None  # Success
-                
-                plan = await rollback_manager.execute_rollback(migration_session)
-                
-                assert plan.status == RollbackStatus.COMPLETED
-                assert all(step.status == RollbackStatus.COMPLETED for step in plan.steps)
-    
-    @pytest.mark.asyncio
-    async def test_execute_rollback_with_failures(self, rollback_manager, migration_session):
-        """Test rollback execution with step failures."""
-        with patch.object(rollback_manager, 'validate_rollback_readiness') as mock_validate:
-            mock_validate.return_value = {
-                migration_session.backups[0].id: MagicMock(is_valid=True)
-            }
-            
-            with patch.object(rollback_manager, '_execute_rollback_step') as mock_execute:
-                mock_execute.side_effect = Exception("Rollback step failed")
-                
-                plan = await rollback_manager.execute_rollback(migration_session)
-                
-                assert plan.status == RollbackStatus.FAILED
-                assert all(step.status == RollbackStatus.FAILED for step in plan.steps)
-    
-    @pytest.mark.asyncio
-    async def test_execute_rollback_continue_on_failure(self, rollback_manager, migration_session, temp_dir):
-        """Test rollback execution with continue on failure option."""
-        # Add multiple backups
-        backup_file = os.path.join(temp_dir, "backup_2.sql")
-        with open(backup_file, "w") as f:
-            f.write("database backup")
-        
-        backup_info = BackupInfo(
-            id=str(uuid.uuid4()),
-            type=BackupType.FULL,
-            source_system="wordpress",
-            location=backup_file,
-            metadata={"backup_type": "database_dump"}
-        )
-        migration_session.add_backup(backup_info)
-        
-        with patch.object(rollback_manager, 'validate_rollback_readiness') as mock_validate:
-            mock_validate.return_value = {
-                backup.id: MagicMock(is_valid=True) for backup in migration_session.backups
-            }
-            
-            with patch.object(rollback_manager, '_execute_rollback_step') as mock_execute:
-                # First step fails, second succeeds
-                mock_execute.side_effect = [Exception("First step failed"), None]
-                
-                rollback_options = {"continue_on_failure": True}
-                plan = await rollback_manager.execute_rollback(migration_session, rollback_options)
-                
-                assert plan.status == RollbackStatus.PARTIAL
-                assert plan.steps[0].status == RollbackStatus.FAILED
-                assert plan.steps[1].status == RollbackStatus.COMPLETED
-    
-    @pytest.mark.asyncio
-    async def test_execute_rollback_skip_validation(self, rollback_manager, migration_session):
-        """Test rollback execution with validation skipped."""
-        with patch.object(rollback_manager, '_execute_rollback_step') as mock_execute:
-            mock_execute.return_value = None  # Success
-            
-            rollback_options = {"skip_validation": True}
-            plan = await rollback_manager.execute_rollback(migration_session, rollback_options)
-            
-            assert plan.status == RollbackStatus.COMPLETED
-    
-    @pytest.mark.asyncio
-    async def test_rollback_file_step(self, rollback_manager, temp_dir):
-        """Test file rollback step execution."""
-        # Create test backup file
-        backup_file = os.path.join(temp_dir, "test_backup.tar.gz")
-        with open(backup_file, "w") as f:
-            f.write("backup content")
-        
-        backup_info = BackupInfo(
-            id=str(uuid.uuid4()),
-            type=BackupType.FULL,
-            source_system="wordpress",
-            location=backup_file,
-            metadata={"backup_type": "file_archive"}
+        op_id = await rollback_manager.register_operation(
+            operation_type="cleanup",
+            backup_id=backup_info.backup_id,
+            affected_files=affected_files,
+            metadata=metadata
         )
         
-        step = RollbackStep("test_step", "Test file rollback", backup_info)
+        assert op_id.startswith("rollback_op_")
         
-        with patch('migration_assistant.backup.strategies.FileBackupStrategy.restore_backup') as mock_restore:
-            mock_restore.return_value = True
-            
-            await rollback_manager._execute_rollback_step(step, {})
-            
-            assert "restore_location" in step.details
-            mock_restore.assert_called_once()
+        # Verify operation was registered
+        operation = rollback_manager.get_rollback_operation(op_id)
+        assert operation is not None
+        assert operation.operation_type == "cleanup"
+        assert operation.backup_id == backup_info.backup_id
+        assert operation.affected_files == affected_files
+        assert operation.metadata == metadata
     
     @pytest.mark.asyncio
-    async def test_rollback_database_step(self, rollback_manager, temp_dir, db_config):
-        """Test database rollback step execution."""
-        # Create test database backup file
-        backup_file = os.path.join(temp_dir, "test_backup.sql")
-        with open(backup_file, "w") as f:
-            f.write("CREATE TABLE test (id INT);")
+    async def test_automatic_rollback_success(self, sample_config, sample_files):
+        """Test successful automatic rollback."""
+        backup_manager = BackupManager(sample_config)
+        rollback_manager = RollbackManager(sample_config, backup_manager)
         
-        backup_info = BackupInfo(
-            id=str(uuid.uuid4()),
-            type=BackupType.FULL,
-            source_system="wordpress",
-            location=backup_file,
-            metadata={"backup_type": "database_dump", "database_type": "mysql"}
+        # Create a pre-cleanup backup
+        files_to_modify = [sample_files / "main.py"]
+        backup_info = await backup_manager.create_pre_cleanup_backup(files_to_modify)
+        
+        # Register operation
+        op_id = await rollback_manager.register_operation(
+            operation_type="cleanup",
+            backup_id=backup_info.backup_id,
+            affected_files=files_to_modify
         )
         
-        step = RollbackStep("test_step", "Test database rollback", backup_info)
+        # Modify the file to simulate cleanup
+        (sample_files / "main.py").write_text("# Modified content")
         
-        with patch('migration_assistant.backup.strategies.DatabaseBackupStrategy.restore_backup') as mock_restore:
-            mock_restore.return_value = True
-            
-            rollback_options = {"database_config": db_config.dict()}
-            await rollback_manager._execute_rollback_step(step, rollback_options)
-            
-            assert step.details["database_restored"] is True
-            mock_restore.assert_called_once()
+        # Perform automatic rollback
+        success = await rollback_manager.automatic_rollback(op_id, "Test error")
+        assert success
+        
+        # Verify operation was marked as completed
+        operation = rollback_manager.get_rollback_operation(op_id)
+        assert operation.rollback_completed
+        assert operation.rollback_timestamp is not None
+        
+        # Verify file was restored
+        restored_content = (sample_files / "main.py").read_text()
+        assert restored_content == "print('Hello, World!')"
     
     @pytest.mark.asyncio
-    async def test_rollback_config_step(self, rollback_manager, temp_dir):
-        """Test configuration rollback step execution."""
-        # Create test config backup file
-        backup_file = os.path.join(temp_dir, "config_backup.json")
-        config_data = {
-            "backup_id": "test",
-            "timestamp": "2023-01-01T00:00:00",
-            "system_config": {"type": "wordpress"},
-            "config_files": {"config.ini": "[section]\nkey=value"}
-        }
-        with open(backup_file, "w") as f:
-            json.dump(config_data, f)
+    async def test_automatic_rollback_nonexistent_operation(self, sample_config):
+        """Test automatic rollback with non-existent operation."""
+        backup_manager = BackupManager(sample_config)
+        rollback_manager = RollbackManager(sample_config, backup_manager)
         
-        backup_info = BackupInfo(
-            id=str(uuid.uuid4()),
-            type=BackupType.FULL,
-            source_system="wordpress",
-            location=backup_file,
-            metadata={"backup_type": "configuration"}
+        success = await rollback_manager.automatic_rollback("non_existent_op")
+        assert not success
+    
+    @pytest.mark.asyncio
+    async def test_manual_rollback_by_operation_id(self, sample_config, sample_files):
+        """Test manual rollback using operation ID."""
+        backup_manager = BackupManager(sample_config)
+        rollback_manager = RollbackManager(sample_config, backup_manager)
+        
+        # Create a pre-cleanup backup
+        files_to_modify = [sample_files / "main.py"]
+        backup_info = await backup_manager.create_pre_cleanup_backup(files_to_modify)
+        
+        # Register operation
+        op_id = await rollback_manager.register_operation(
+            operation_type="cleanup",
+            backup_id=backup_info.backup_id,
+            affected_files=files_to_modify
         )
         
-        step = RollbackStep("test_step", "Test config rollback", backup_info)
+        # Modify the file
+        (sample_files / "main.py").write_text("# Modified content")
         
-        with patch('migration_assistant.backup.strategies.ConfigBackupStrategy.restore_backup') as mock_restore:
-            mock_restore.return_value = True
-            
-            await rollback_manager._execute_rollback_step(step, {})
-            
-            assert step.details["config_restored"] is True
-            mock_restore.assert_called_once()
+        # Perform manual rollback
+        success = await rollback_manager.manual_rollback(operation_id=op_id)
+        assert success
+        
+        # Verify file was restored
+        restored_content = (sample_files / "main.py").read_text()
+        assert restored_content == "print('Hello, World!')"
     
     @pytest.mark.asyncio
-    async def test_get_rollback_status(self, rollback_manager, migration_session):
-        """Test getting rollback status."""
-        plan = await rollback_manager.create_rollback_plan(migration_session)
+    async def test_manual_rollback_by_backup_id(self, sample_config, sample_files):
+        """Test manual rollback using backup ID."""
+        backup_manager = BackupManager(sample_config)
+        rollback_manager = RollbackManager(sample_config, backup_manager)
         
-        status = await rollback_manager.get_rollback_status(migration_session.id)
+        # Create a full backup
+        backup_info = await backup_manager.create_full_backup()
         
-        assert status is not None
-        assert status["session_id"] == migration_session.id
-        assert status["status"] == RollbackStatus.PENDING.value
-        assert "progress" in status
-        assert "steps" in status
+        # Modify files
+        (sample_files / "main.py").write_text("# Modified content")
+        (sample_files / "utils.py").write_text("# Modified utils")
+        
+        # Perform manual rollback
+        target_files = [sample_files / "main.py", sample_files / "utils.py"]
+        success = await rollback_manager.manual_rollback(
+            backup_id=backup_info.backup_id,
+            target_files=target_files
+        )
+        assert success
+        
+        # Verify files were restored
+        main_content = (sample_files / "main.py").read_text()
+        utils_content = (sample_files / "utils.py").read_text()
+        assert main_content == "print('Hello, World!')"
+        assert utils_content == "def helper(): pass"
+    
+    def test_list_rollback_operations(self, sample_config):
+        """Test listing rollback operations."""
+        backup_manager = BackupManager(sample_config)
+        rollback_manager = RollbackManager(sample_config, backup_manager)
+        
+        # Initially no operations
+        operations = rollback_manager.list_rollback_operations()
+        assert len(operations) == 0
+        
+        # Add mock operations
+        op1 = RollbackOperation(
+            "op1", "cleanup", "backup1", [Path("/file1.py")]
+        )
+        op2 = RollbackOperation(
+            "op2", "formatting", "backup2", [Path("/file2.py")]
+        )
+        op2.rollback_completed = True
+        
+        rollback_manager._rollback_operations["op1"] = op1
+        rollback_manager._rollback_operations["op2"] = op2
+        
+        # List all operations
+        all_ops = rollback_manager.list_rollback_operations()
+        assert len(all_ops) == 2
+        
+        # List by operation type
+        cleanup_ops = rollback_manager.list_rollback_operations(operation_type="cleanup")
+        assert len(cleanup_ops) == 1
+        assert cleanup_ops[0].operation_type == "cleanup"
+        
+        # List completed only
+        completed_ops = rollback_manager.list_rollback_operations(completed_only=True)
+        assert len(completed_ops) == 1
+        assert completed_ops[0].rollback_completed
+    
+    def test_get_rollback_operation(self, sample_config):
+        """Test getting rollback operation by ID."""
+        backup_manager = BackupManager(sample_config)
+        rollback_manager = RollbackManager(sample_config, backup_manager)
+        
+        # Non-existent operation
+        operation = rollback_manager.get_rollback_operation("non_existent")
+        assert operation is None
+        
+        # Add mock operation
+        mock_op = RollbackOperation(
+            "test_op", "cleanup", "backup1", [Path("/file1.py")]
+        )
+        rollback_manager._rollback_operations["test_op"] = mock_op
+        
+        # Get existing operation
+        retrieved_op = rollback_manager.get_rollback_operation("test_op")
+        assert retrieved_op == mock_op
     
     @pytest.mark.asyncio
-    async def test_get_rollback_status_nonexistent(self, rollback_manager):
-        """Test getting status for nonexistent rollback."""
-        status = await rollback_manager.get_rollback_status("nonexistent_id")
-        assert status is None
+    async def test_cleanup_old_operations(self, sample_config):
+        """Test cleaning up old rollback operations."""
+        backup_manager = BackupManager(sample_config)
+        rollback_manager = RollbackManager(sample_config, backup_manager)
+        
+        # Add old and recent operations
+        old_op = RollbackOperation(
+            "old_op", "cleanup", "backup1", [Path("/file1.py")],
+            timestamp=datetime.now() - timedelta(days=35)
+        )
+        recent_op = RollbackOperation(
+            "recent_op", "cleanup", "backup2", [Path("/file2.py")],
+            timestamp=datetime.now() - timedelta(days=5)
+        )
+        
+        rollback_manager._rollback_operations["old_op"] = old_op
+        rollback_manager._rollback_operations["recent_op"] = recent_op
+        
+        # Cleanup operations older than 30 days
+        deleted = await rollback_manager.cleanup_old_operations(max_age_days=30)
+        
+        assert "old_op" in deleted
+        assert "recent_op" not in deleted
+        assert "old_op" not in rollback_manager._rollback_operations
+        assert "recent_op" in rollback_manager._rollback_operations
+    
+    def test_get_rollback_statistics_empty(self, sample_config):
+        """Test getting rollback statistics with no operations."""
+        backup_manager = BackupManager(sample_config)
+        rollback_manager = RollbackManager(sample_config, backup_manager)
+        
+        stats = rollback_manager.get_rollback_statistics()
+        
+        assert stats["total_operations"] == 0
+        assert stats["completed_rollbacks"] == 0
+        assert stats["failed_rollbacks"] == 0
+        assert stats["success_rate"] == 0.0
+        assert stats["operation_types"] == {}
+        assert stats["recent_operations"] == 0
+    
+    def test_get_rollback_statistics_with_operations(self, sample_config):
+        """Test getting rollback statistics with operations."""
+        backup_manager = BackupManager(sample_config)
+        rollback_manager = RollbackManager(sample_config, backup_manager)
+        
+        # Add mock operations
+        op1 = RollbackOperation(
+            "op1", "cleanup", "backup1", [Path("/file1.py")],
+            timestamp=datetime.now() - timedelta(days=1)
+        )
+        op1.rollback_completed = True
+        
+        op2 = RollbackOperation(
+            "op2", "formatting", "backup2", [Path("/file2.py")],
+            timestamp=datetime.now() - timedelta(days=2)
+        )
+        # op2 not completed (failed)
+        
+        rollback_manager._rollback_operations["op1"] = op1
+        rollback_manager._rollback_operations["op2"] = op2
+        
+        stats = rollback_manager.get_rollback_statistics()
+        
+        assert stats["total_operations"] == 2
+        assert stats["completed_rollbacks"] == 1
+        assert stats["failed_rollbacks"] == 1
+        assert stats["success_rate"] == 0.5
+        assert stats["operation_types"]["cleanup"]["total"] == 1
+        assert stats["operation_types"]["cleanup"]["completed"] == 1
+        assert stats["operation_types"]["formatting"]["total"] == 1
+        assert stats["operation_types"]["formatting"]["completed"] == 0
+        assert stats["recent_operations"] == 2  # Both within 7 days
     
     @pytest.mark.asyncio
-    async def test_cancel_rollback(self, rollback_manager, migration_session):
-        """Test cancelling a rollback operation."""
-        plan = await rollback_manager.create_rollback_plan(migration_session)
-        plan.status = RollbackStatus.IN_PROGRESS
-        plan.steps[0].start()
+    async def test_verify_rollback_capability_valid(self, sample_config, sample_files):
+        """Test verifying rollback capability for valid operation."""
+        backup_manager = BackupManager(sample_config)
+        rollback_manager = RollbackManager(sample_config, backup_manager)
         
-        success = await rollback_manager.cancel_rollback(migration_session.id)
+        # Create backup and register operation
+        backup_info = await backup_manager.create_full_backup()
+        op_id = await rollback_manager.register_operation(
+            "cleanup", backup_info.backup_id, [sample_files / "main.py"]
+        )
         
-        assert success is True
-        assert plan.status == RollbackStatus.FAILED
-        assert plan.steps[0].status == RollbackStatus.FAILED
-        assert plan.steps[0].error == "Rollback cancelled by user"
+        can_rollback, errors = await rollback_manager.verify_rollback_capability(op_id)
+        assert can_rollback
+        assert len(errors) == 0
     
     @pytest.mark.asyncio
-    async def test_cancel_rollback_not_in_progress(self, rollback_manager, migration_session):
-        """Test cancelling a rollback that's not in progress."""
-        await rollback_manager.create_rollback_plan(migration_session)
+    async def test_verify_rollback_capability_nonexistent(self, sample_config):
+        """Test verifying rollback capability for non-existent operation."""
+        backup_manager = BackupManager(sample_config)
+        rollback_manager = RollbackManager(sample_config, backup_manager)
         
-        success = await rollback_manager.cancel_rollback(migration_session.id)
-        
-        assert success is False
+        can_rollback, errors = await rollback_manager.verify_rollback_capability("non_existent")
+        assert not can_rollback
+        assert "Operation not found" in errors
     
     @pytest.mark.asyncio
-    async def test_cleanup_rollback_artifacts(self, rollback_manager, migration_session):
-        """Test cleanup of rollback artifacts."""
-        plan = await rollback_manager.create_rollback_plan(migration_session)
+    async def test_create_recovery_plan(self, sample_config, sample_files):
+        """Test creating recovery plan."""
+        backup_manager = BackupManager(sample_config)
+        rollback_manager = RollbackManager(sample_config, backup_manager)
         
-        # Add some test artifacts
-        plan.steps[0].details["restore_location"] = "/tmp/rollback_test"
+        # Create backup and register operation
+        backup_info = await backup_manager.create_full_backup()
+        op_id = await rollback_manager.register_operation(
+            "cleanup", backup_info.backup_id, [sample_files / "main.py"]
+        )
         
-        with patch('shutil.rmtree') as mock_rmtree:
-            success = await rollback_manager.cleanup_rollback_artifacts(migration_session.id)
-            
-            assert success is True
-            assert migration_session.id not in rollback_manager._active_rollbacks
+        plan = await rollback_manager.create_recovery_plan(op_id)
+        
+        assert plan is not None
+        assert plan["operation_id"] == op_id
+        assert plan["operation_type"] == "cleanup"
+        assert plan["backup_id"] == backup_info.backup_id
+        assert plan["backup_type"] == "full"
+        assert plan["can_rollback"] is True
+        assert "steps" in plan
+        assert len(plan["steps"]) > 0
     
     @pytest.mark.asyncio
-    async def test_generate_rollback_guidance(self, rollback_manager, migration_session):
-        """Test generation of rollback guidance."""
-        guidance = await rollback_manager.generate_rollback_guidance(migration_session)
+    async def test_create_recovery_plan_nonexistent(self, sample_config):
+        """Test creating recovery plan for non-existent operation."""
+        backup_manager = BackupManager(sample_config)
+        rollback_manager = RollbackManager(sample_config, backup_manager)
         
-        assert "session_id" in guidance
-        assert "automatic_rollback_possible" in guidance
-        assert "manual_steps_required" in guidance
-        assert "prerequisites" in guidance
-        assert "estimated_complexity" in guidance
-        assert guidance["session_id"] == migration_session.id
+        plan = await rollback_manager.create_recovery_plan("non_existent")
+        assert plan is None
     
-    @pytest.mark.asyncio
-    async def test_generate_rollback_guidance_no_backups(self, rollback_manager, migration_session):
-        """Test rollback guidance generation with no backups."""
-        migration_session.backups = []
-        
-        guidance = await rollback_manager.generate_rollback_guidance(migration_session)
-        
-        assert guidance["automatic_rollback_possible"] is False
-        assert guidance["estimated_complexity"] == "high"
-        assert any("No backups available" in step for step in guidance["manual_steps_required"])
-    
-    @pytest.mark.asyncio
-    async def test_get_rollback_statistics(self, rollback_manager, migration_session):
-        """Test getting rollback statistics."""
-        # Create some rollback plans
-        await rollback_manager.create_rollback_plan(migration_session)
-        
-        stats = await rollback_manager.get_rollback_statistics()
-        
-        assert "total_rollbacks" in stats
-        assert "rollback_status_counts" in stats
-        assert "average_steps_per_rollback" in stats
-        assert "success_rate" in stats
-        assert stats["total_rollbacks"] >= 1
-    
-    def test_estimate_rollback_duration(self, rollback_manager):
+    def test_estimate_rollback_duration(self, sample_config):
         """Test rollback duration estimation."""
-        backups = [
-            BackupInfo(
-                id="backup1",
-                type=BackupType.FULL,
-                source_system="test",
-                location="/path/backup1",
-                size=100 * 1024 * 1024  # 100MB
-            ),
-            BackupInfo(
-                id="backup2",
-                type=BackupType.FULL,
-                source_system="test",
-                location="/path/backup2",
-                size=50 * 1024 * 1024   # 50MB
-            )
-        ]
+        backup_manager = BackupManager(sample_config)
+        rollback_manager = RollbackManager(sample_config, backup_manager)
         
-        duration = rollback_manager._estimate_rollback_duration(backups)
-        
-        assert duration > 0
-        assert isinstance(duration, int)
-    
-    def test_logging(self, rollback_manager):
-        """Test rollback operation logging."""
-        # Clear existing logs
-        rollback_manager.clear_logs()
-        
-        # Perform an operation that generates logs
-        rollback_manager._log("INFO", "Test log message", "test_session_id")
-        
-        # Check logs
-        logs = rollback_manager.get_logs()
-        assert len(logs) == 1
-        assert logs[0].message == "Test log message"
-        assert logs[0].details["session_id"] == "test_session_id"
-        
-        # Test filtered logs
-        filtered_logs = rollback_manager.get_logs("test_session_id")
-        assert len(filtered_logs) == 1
-        
-        # Clear logs
-        rollback_manager.clear_logs()
-        assert len(rollback_manager.get_logs()) == 0
-
-
-class TestRollbackPlan:
-    """Test cases for RollbackPlan."""
-    
-    @pytest.fixture
-    def migration_session(self):
-        """Create a migration session for testing."""
-        config = MigrationConfig(
-            source=SystemConfig(type="wordpress", host="localhost"),
-            destination=SystemConfig(type="wordpress", host="remote")
+        # Small backup
+        small_backup = BackupInfo(
+            "small", "full", Path("/src"), Path("/backup.tar.gz"), "checksum", 1024 * 1024  # 1MB
         )
-        return MigrationSession(id=str(uuid.uuid4()), config=config)
-    
-    @pytest.fixture
-    def rollback_plan(self, migration_session):
-        """Create a rollback plan for testing."""
-        return RollbackPlan(migration_session)
-    
-    @pytest.fixture
-    def rollback_step(self):
-        """Create a rollback step for testing."""
-        backup_info = BackupInfo(
-            id=str(uuid.uuid4()),
-            type=BackupType.FULL,
-            source_system="wordpress",
-            location="/path/backup",
-            metadata={"backup_type": "file_archive"}
+        duration = rollback_manager._estimate_rollback_duration(small_backup)
+        assert duration >= 5  # Minimum 5 seconds
+        
+        # Large backup
+        large_backup = BackupInfo(
+            "large", "full", Path("/src"), Path("/backup.tar.gz"), "checksum", 100 * 1024 * 1024  # 100MB
         )
-        return RollbackStep("step1", "Test step", backup_info)
+        duration = rollback_manager._estimate_rollback_duration(large_backup)
+        assert duration > 5  # Should be more than minimum
     
-    def test_add_step(self, rollback_plan, rollback_step):
-        """Test adding a step to rollback plan."""
-        rollback_plan.add_step(rollback_step)
+    def test_operations_persistence(self, sample_config, temp_dir):
+        """Test rollback operations persistence."""
+        backup_manager = BackupManager(sample_config)
+        rollback_manager = RollbackManager(sample_config, backup_manager)
         
-        assert len(rollback_plan.steps) == 1
-        assert rollback_plan.steps[0] == rollback_step
-    
-    def test_get_step(self, rollback_plan, rollback_step):
-        """Test getting a step by ID."""
-        rollback_plan.add_step(rollback_step)
+        # Add an operation
+        operation = RollbackOperation(
+            "test_op", "cleanup", "backup1", [Path("/file1.py")]
+        )
+        rollback_manager._rollback_operations["test_op"] = operation
+        rollback_manager._save_operations()
         
-        retrieved_step = rollback_plan.get_step("step1")
-        assert retrieved_step == rollback_step
+        # Create new manager instance (should load operations)
+        new_rollback_manager = RollbackManager(sample_config, backup_manager)
         
-        nonexistent_step = rollback_plan.get_step("nonexistent")
-        assert nonexistent_step is None
-    
-    def test_get_progress(self, rollback_plan, rollback_step):
-        """Test getting rollback progress."""
-        rollback_plan.add_step(rollback_step)
-        
-        progress = rollback_plan.get_progress()
-        
-        assert progress["total_steps"] == 1
-        assert progress["completed_steps"] == 0
-        assert progress["failed_steps"] == 0
-        assert progress["progress_percentage"] == 0
-        
-        # Complete the step
-        rollback_step.complete()
-        progress = rollback_plan.get_progress()
-        
-        assert progress["completed_steps"] == 1
-        assert progress["progress_percentage"] == 100
+        # Verify operation was loaded
+        loaded_op = new_rollback_manager.get_rollback_operation("test_op")
+        assert loaded_op is not None
+        assert loaded_op.operation_id == "test_op"
+        assert loaded_op.operation_type == "cleanup"
 
 
-class TestRollbackStep:
-    """Test cases for RollbackStep."""
-    
-    @pytest.fixture
-    def rollback_step(self):
-        """Create a rollback step for testing."""
-        backup_info = BackupInfo(
-            id=str(uuid.uuid4()),
-            type=BackupType.FULL,
-            source_system="wordpress",
-            location="/path/backup",
-            metadata={"backup_type": "file_archive"}
-        )
-        return RollbackStep("step1", "Test step", backup_info)
-    
-    def test_start(self, rollback_step):
-        """Test starting a rollback step."""
-        rollback_step.start()
-        
-        assert rollback_step.status == RollbackStatus.IN_PROGRESS
-        assert rollback_step.start_time is not None
-    
-    def test_complete(self, rollback_step):
-        """Test completing a rollback step."""
-        rollback_step.start()
-        rollback_step.complete()
-        
-        assert rollback_step.status == RollbackStatus.COMPLETED
-        assert rollback_step.end_time is not None
-    
-    def test_fail(self, rollback_step):
-        """Test failing a rollback step."""
-        rollback_step.start()
-        rollback_step.fail("Test error")
-        
-        assert rollback_step.status == RollbackStatus.FAILED
-        assert rollback_step.error == "Test error"
-        assert rollback_step.end_time is not None
+if __name__ == "__main__":
+    pytest.main([__file__])

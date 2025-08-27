@@ -1,0 +1,119 @@
+# CI/CD Codebase Checkup Configuration
+# Optimized for continuous integration environments
+
+[checkup]
+# Enable analysis suitable for CI
+enable_quality_analysis = true
+enable_duplicate_detection = false  # Can be slow in CI
+enable_import_analysis = true
+enable_structure_analysis = false  # Not needed in CI
+enable_coverage_analysis = true
+enable_config_validation = true
+enable_doc_validation = false  # Can be flaky in CI
+
+# No automatic cleanup in CI
+auto_format = false
+auto_fix_imports = false
+auto_organize_files = false
+auto_fix_quality = false
+
+# CI-optimized performance
+parallel_analysis = true
+max_workers = 2  # Conservative for CI resources
+timeout = 300  # 5 minutes max
+
+# CI-appropriate output
+verbose = false
+quiet = true
+dry_run = false
+
+# Standard file filtering
+include_patterns = ["*.py"]
+exclude_patterns = [
+    "venv/*",
+    "__pycache__/*",
+    "*.pyc",
+    ".git/*",
+    "build/*",
+    "dist/*",
+    "node_modules/*",
+    ".tox/*",
+    ".pytest_cache/*"
+]
+max_file_size = 1048576  # 1MB
+
+[checkup.quality]
+# CI-appropriate quality checks
+max_complexity = 10
+max_line_length = 88
+enforce_docstrings = false  # Can cause CI failures
+check_type_hints = true
+
+# Essential tools only
+use_flake8 = true
+use_mypy = true
+use_bandit = true  # Security is important in CI
+
+# Moderate code smell detection
+detect_code_smells = true
+smell_threshold = 0.7
+check_dead_code = true
+check_unused_variables = true
+
+[checkup.imports]
+# Import analysis for CI
+remove_unused = false  # Don't modify in CI
+organize_imports = false  # Don't modify in CI
+check_circular = true
+check_missing = true
+analyze_dependencies = true
+detect_orphaned_modules = true
+
+[checkup.coverage]
+# Coverage requirements for CI
+min_coverage = 80.0
+min_function_coverage = 75.0
+min_branch_coverage = 70.0
+
+# Basic test analysis
+check_test_quality = false  # Can be slow
+detect_redundant_tests = false
+suggest_missing_tests = true
+
+# CI coverage integration
+use_pytest_cov = true
+coverage_report_format = "xml"  # For CI integration
+generate_coverage_badge = false
+
+[checkup.reporting]
+# CI-optimized reporting
+generate_html_report = false  # Not needed in CI
+generate_json_report = true   # For CI integration
+generate_markdown_report = false
+generate_xml_report = true    # For CI tools
+
+# Minimal report content
+include_metrics = true
+include_trends = false
+include_suggestions = false
+include_examples = false
+
+# CI report settings
+output_directory = "ci-reports"
+report_filename_template = "checkup-{timestamp}"
+compress_reports = true  # Save CI storage
+
+[checkup.safety]
+# No backups in CI
+create_backup = false
+require_confirmation = false
+
+# No file modifications in CI
+max_file_moves = 0
+max_file_deletions = 0
+max_changes_per_file = 0
+
+# CI validation
+validate_before_changes = false
+run_tests_after_changes = false
+check_syntax_after_changes = false

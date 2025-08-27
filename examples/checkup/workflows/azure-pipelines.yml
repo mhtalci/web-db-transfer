@@ -1,0 +1,259 @@
+# Azure DevOps Pipeline with Codebase Checkup
+# Save as azure-pipelines.yml in your project root
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+  paths:
+    exclude:
+      - docs/*
+      - README.md
+
+pr:
+  branches:
+    include:
+      - main
+      - develop
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  pythonVersion: '3.9'
+  pipCacheDir: $(Pipeline.Workspace)/.pip
+
+stages:
+- stage: Test
+  displayName: 'Test Stage'
+  jobs:
+  - job: UnitTests
+    displayName: 'Run Unit Tests'
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '$(pythonVersion)'
+      displayName: 'Use Python $(pythonVersion)'
+
+    - task: Cache@2
+      inputs:
+        key: 'python | "$(Agent.OS)" | requirements.txt'
+        restoreKeys: |
+          python | "$(Agent.OS)"
+          python
+        path: $(pipCacheDir)
+      displayName: 'Cache pip packages'
+
+    - script: |
+        python -m pip install --upgrade pip
+        pip install migration-assistant[checkup]
+        pip install -r requirements.txt
+      displayName: 'Install dependencies'
+
+    - script: |
+        python -m pytest tests/ --cov=src/ --cov-report=xml --cov-report=html --junitxml=test-results.xml
+      displayName: 'Run tests with coverage'
+
+    - task: PublishTestResults@2
+      condition: succeededOrFailed()
+      inputs:
+        testResultsFiles: 'test-results.xml'
+        testRunTitle: 'Python $(pythonVersion)'
+      displayName: 'Publish test results'
+
+    - task: PublishCodeCoverageResults@1
+      inputs:
+        codeCoverageTool: Cobertura
+        summaryFileLocation: 'coverage.xml'
+        reportDirectory: 'htmlcov'
+      displayName: 'Publish coverage results'
+
+- stage: Quality
+  displayName: 'Code Quality Stage'
+  dependsOn: Test
+  jobs:
+  - job: QualityAnalysis
+    displayName: 'Code Quality Analysis'
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '$(pythonVersion)'
+      displayName: 'Use Python $(pythonVersion)'
+
+    - task: Cache@2
+      inputs:
+        key: 'python | "$(Agent.OS)" | requirements.txt'
+        restoreKeys: |
+          python | "$(Agent.OS)"
+          python
+        path: $(pipCacheDir)
+      displayName: 'Cache pip packages'
+
+    - script: |
+        python -m pip install --upgrade pip
+        pip install migration-assistant[checkup]
+      displayName: 'Install checkup tools'
+
+    - script: |
+        migration-assistant checkup analyze \
+          --config examples/checkup/ci-checkup.toml \
+          --report-json \
+          --report-xml \
+          --output-dir $(Agent.TempDirectory)/quality-reports
+      displayName: 'Run code quality analysis'
+
+    - task: PublishTestResults@2
+      condition: succeededOrFailed()
+      inputs:
+        testResultsFiles: '$(Agent.TempDirectory)/quality-reports/checkup-*.xml'
+        testRunTitle: 'Code Quality Results'
+      displayName: 'Publish quality results'
+
+    - task: PublishBuildArtifacts@1
+      condition: succeededOrFailed()
+      inputs:
+        pathToPublish: '$(Agent.TempDirectory)/quality-reports'
+        artifactName: 'quality-reports'
+      displayName: 'Publish quality reports'
+
+    - script: |
+        python -c "
+        import json
+        import sys
+        import glob
+        import os
+        
+        report_files = glob.glob('$(Agent.TempDirectory)/quality-reports/checkup-*.json')
+        if not report_files:
+            print('No quality report found')
+            sys.exit(1)
+            
+        with open(report_files[0]) as f:
+            report = json.load(f)
+        
+        critical_issues = sum(1 for issue in report.get('quality_issues', []) 
+                             if issue.get('severity') == 'critical')
+        
+        quality_score = report['metrics']['quality_score']
+        
+        print(f'Quality score: {quality_score}/100')
+        print(f'Critical issues: {critical_issues}')
+        
+        # Set Azure DevOps variables
+        print(f'##vso[task.setvariable variable=QualityScore]{quality_score}')
+        print(f'##vso[task.setvariable variable=CriticalIssues]{critical_issues}')
+        
+        if critical_issues > 0:
+            print('##vso[task.logissue type=error]Critical quality issues found')
+            sys.exit(1)
+        
+        if quality_score < 70:
+            print('##vso[task.logissue type=error]Quality score below threshold')
+            sys.exit(1)
+            
+        print('Quality gate passed')
+        "
+      displayName: 'Quality Gate Check'
+
+  - job: SecurityScan
+    displayName: 'Security Scan'
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '$(pythonVersion)'
+      displayName: 'Use Python $(pythonVersion)'
+
+    - script: |
+        python -m pip install --upgrade pip
+        pip install bandit safety
+      displayName: 'Install security tools'
+
+    - script: |
+        bandit -r src/ -f json -o bandit-report.json || true
+        safety check --json --output safety-report.json || true
+      displayName: 'Run security scans'
+
+    - task: PublishBuildArtifacts@1
+      condition: succeededOrFailed()
+      inputs:
+        pathToPublish: '.'
+        artifactName: 'security-reports'
+        publishLocation: 'Container'
+      displayName: 'Publish security reports'
+
+- stage: Deploy
+  displayName: 'Deploy Stage'
+  dependsOn: Quality
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - job: FormatCode
+    displayName: 'Auto-format Code'
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '$(pythonVersion)'
+      displayName: 'Use Python $(pythonVersion)'
+
+    - script: |
+        python -m pip install --upgrade pip
+        pip install migration-assistant[checkup]
+      displayName: 'Install checkup tools'
+
+    - script: |
+        git config --global user.email "azure-pipelines@example.com"
+        git config --global user.name "Azure Pipelines"
+      displayName: 'Configure git'
+
+    - script: |
+        migration-assistant checkup format \
+          --config examples/checkup/development-checkup.toml \
+          --backup
+      displayName: 'Format code'
+
+    - script: |
+        if [ -n "$(git status --porcelain)" ]; then
+          git add -A
+          git commit -m "Auto-format code with checkup [skip ci]"
+          git push origin HEAD:$(Build.SourceBranchName)
+        else
+          echo "No formatting changes needed"
+        fi
+      displayName: 'Commit formatting changes'
+      condition: and(succeeded(), eq(variables['Build.Reason'], 'Manual'))
+
+  - job: QualityReport
+    displayName: 'Generate Quality Report'
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '$(pythonVersion)'
+      displayName: 'Use Python $(pythonVersion)'
+
+    - script: |
+        python -m pip install --upgrade pip
+        pip install migration-assistant[checkup]
+      displayName: 'Install checkup tools'
+
+    - script: |
+        migration-assistant checkup run \
+          --config examples/checkup/team-checkup.toml \
+          --report-html \
+          --report-json \
+          --output-dir quality-dashboard
+      displayName: 'Generate quality dashboard'
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: 'quality-dashboard'
+        artifactName: 'quality-dashboard'
+      displayName: 'Publish quality dashboard'
+
+# Scheduled builds for regular quality checks
+schedules:
+- cron: "0 2 * * 1"  # Every Monday at 2 AM
+  displayName: Weekly quality check
+  branches:
+    include:
+    - main
+  always: true

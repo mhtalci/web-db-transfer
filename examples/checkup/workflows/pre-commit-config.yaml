@@ -1,0 +1,98 @@
+# Pre-commit configuration with codebase checkup
+# Save as .pre-commit-config.yaml in your project root
+
+repos:
+  # Standard pre-commit hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: debug-statements
+
+  # Python formatting
+  - repo: https://github.com/psf/black
+    rev: 23.3.0
+    hooks:
+      - id: black
+        language_version: python3
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort
+        args: ["--profile", "black"]
+
+  # Python linting
+  - repo: https://github.com/pycqa/flake8
+    rev: 6.0.0
+    hooks:
+      - id: flake8
+        additional_dependencies: [flake8-docstrings]
+
+  # Type checking
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.3.0
+    hooks:
+      - id: mypy
+        additional_dependencies: [types-all]
+
+  # Codebase checkup hooks
+  - repo: local
+    hooks:
+      # Quick analysis on staged files
+      - id: checkup-quick
+        name: Quick Checkup Analysis
+        entry: migration-assistant checkup analyze --quiet --no-report
+        language: system
+        pass_filenames: false
+        stages: [commit]
+        
+      # Full analysis on push
+      - id: checkup-full
+        name: Full Checkup Analysis
+        entry: migration-assistant checkup analyze --config examples/checkup/development-checkup.toml --report-markdown
+        language: system
+        pass_filenames: false
+        stages: [push]
+        
+      # Import cleanup
+      - id: checkup-imports
+        name: Import Cleanup
+        entry: migration-assistant checkup clean-imports --dry-run
+        language: system
+        files: \.py$
+        stages: [commit]
+
+# Configuration for specific hooks
+default_language_version:
+  python: python3.9
+
+default_stages: [commit]
+
+# Exclude patterns
+exclude: |
+  (?x)^(
+      migrations/|
+      venv/|
+      __pycache__/|
+      \.git/|
+      build/|
+      dist/
+  )
+
+# CI configuration
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+    
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false

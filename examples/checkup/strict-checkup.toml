@@ -1,0 +1,187 @@
+# Strict Codebase Checkup Configuration
+# This configuration enforces high code quality standards
+
+[checkup]
+# Enable all analysis modules
+enable_quality_analysis = true
+enable_duplicate_detection = true
+enable_import_analysis = true
+enable_structure_analysis = true
+enable_coverage_analysis = true
+enable_config_validation = true
+enable_doc_validation = true
+
+# Enable comprehensive cleanup
+auto_format = true
+auto_fix_imports = true
+auto_organize_files = false  # Require manual review for file moves
+auto_fix_quality = true
+
+# Performance settings
+parallel_analysis = true
+max_workers = 4
+timeout = 600
+
+# Strict file filtering
+include_patterns = ["*.py"]
+exclude_patterns = [
+    "venv/*",
+    "__pycache__/*",
+    "*.pyc",
+    ".git/*",
+    "build/*",
+    "dist/*",
+    "node_modules/*",
+    "migrations/*"  # Often auto-generated
+]
+max_file_size = 524288  # 512KB
+
+[checkup.quality]
+# Strict quality requirements
+max_complexity = 8
+max_nesting_depth = 3
+max_function_length = 30
+max_class_length = 150
+max_line_length = 88
+
+# Enforce documentation and typing
+enforce_docstrings = true
+check_type_hints = true
+enforce_naming_conventions = true
+
+# Enable all quality tools
+use_flake8 = true
+use_mypy = true
+use_pylint = false  # Can be too noisy
+use_bandit = true
+
+# Strict code smell detection
+detect_code_smells = true
+smell_threshold = 0.8
+check_dead_code = true
+check_unused_variables = true
+
+[checkup.duplicates]
+# Strict duplicate detection
+similarity_threshold = 0.85
+min_duplicate_lines = 3
+min_duplicate_tokens = 30
+ignore_test_files = false
+suggest_refactoring = true
+min_refactor_confidence = 0.9
+
+[checkup.imports]
+# Comprehensive import analysis
+remove_unused = true
+organize_imports = true
+check_circular = true
+check_missing = true
+analyze_dependencies = true
+detect_orphaned_modules = true
+
+# Strict import formatting
+use_isort = true
+isort_profile = "black"
+force_single_line = false
+combine_star_imports = false
+remove_duplicate_imports = true
+
+[checkup.coverage]
+# High coverage requirements
+min_coverage = 90.0
+min_function_coverage = 85.0
+min_branch_coverage = 80.0
+min_line_coverage = 90.0
+
+# Comprehensive test analysis
+check_test_quality = true
+detect_redundant_tests = true
+suggest_missing_tests = true
+min_test_complexity = 3
+
+# Coverage tool integration
+use_pytest_cov = true
+coverage_report_format = "html"
+generate_coverage_badge = true
+
+[checkup.structure]
+# Strict structure requirements
+max_nesting_depth = 2
+enforce_init_files = true
+check_naming_conventions = true
+suggest_reorganization = true
+
+# File organization rules
+group_related_files = true
+separate_tests = true
+organize_by_feature = false
+enforce_package_structure = true
+
+# Directory management
+remove_empty_dirs = true
+max_files_per_directory = 15
+suggest_subdirectories = true
+max_single_file_size = 500  # lines
+
+[checkup.formatting]
+# Strict formatting
+use_black = true
+black_line_length = 88
+black_skip_string_normalization = false
+
+use_isort = true
+isort_profile = "black"
+isort_line_length = 88
+
+# Docstring requirements
+format_docstrings = true
+docstring_style = "google"
+enforce_docstring_format = true
+
+# Additional formatting rules
+remove_trailing_whitespace = true
+ensure_newline_at_eof = true
+normalize_line_endings = true
+
+[checkup.reporting]
+# Comprehensive reporting
+generate_html_report = true
+generate_json_report = true
+generate_markdown_report = true
+generate_xml_report = true
+
+# Detailed report content
+include_metrics = true
+include_trends = true
+include_suggestions = true
+include_examples = true
+
+# Enhanced HTML reports
+html_theme = "default"
+include_source_code = true
+syntax_highlighting = true
+interactive_charts = true
+
+output_directory = "quality-reports"
+report_filename_template = "quality-report-{timestamp}"
+compress_reports = false
+
+[checkup.safety]
+# Comprehensive safety measures
+create_backup = true
+backup_directory = ".quality-backups"
+max_backups = 10
+compress_backups = true
+
+# Conservative change limits
+max_file_moves = 3
+max_file_deletions = 2
+max_changes_per_file = 20
+require_confirmation = true
+
+# Validation and rollback
+enable_rollback = true
+validate_before_changes = true
+run_tests_after_changes = true
+check_syntax_after_changes = true
+auto_rollback_on_error = true

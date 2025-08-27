@@ -1,0 +1,202 @@
+# Development Codebase Checkup Configuration
+# Balanced settings for active development environments
+
+[checkup]
+# Enable analysis suitable for development
+enable_quality_analysis = true
+enable_duplicate_detection = true
+enable_import_analysis = true
+enable_structure_analysis = true
+enable_coverage_analysis = true
+enable_config_validation = true
+enable_doc_validation = false  # Can be distracting during development
+
+# Moderate cleanup for development
+auto_format = true
+auto_fix_imports = true
+auto_organize_files = false  # Require confirmation for file moves
+auto_fix_quality = false  # Manual review for quality fixes
+
+# Development-optimized performance
+parallel_analysis = true
+max_workers = 3
+timeout = 300  # 5 minutes
+
+# Development-friendly output
+verbose = false
+quiet = false
+dry_run = false
+
+# Standard file filtering for development
+include_patterns = ["*.py"]
+exclude_patterns = [
+    "venv/*",
+    "__pycache__/*",
+    "*.pyc",
+    ".git/*",
+    "build/*",
+    "dist/*",
+    "node_modules/*",
+    ".tox/*",
+    ".pytest_cache/*",
+    "*.egg-info/*",
+    ".coverage",
+    "htmlcov/*"
+]
+max_file_size = 1048576  # 1MB
+
+[checkup.quality]
+# Balanced quality settings for development
+max_complexity = 12
+max_nesting_depth = 4
+max_function_length = 50
+max_class_length = 200
+max_line_length = 88
+
+# Moderate enforcement
+enforce_docstrings = false  # Can slow development
+check_type_hints = true
+enforce_naming_conventions = true
+
+# Development-friendly tools
+use_flake8 = true
+use_mypy = true
+use_bandit = true
+
+# Moderate code smell detection
+detect_code_smells = true
+smell_threshold = 0.6
+check_dead_code = true
+check_unused_variables = true
+
+[checkup.duplicates]
+# Reasonable duplicate detection for development
+similarity_threshold = 0.8
+min_duplicate_lines = 5
+min_duplicate_tokens = 50
+ignore_test_files = true  # Tests often have similar patterns
+suggest_refactoring = true
+min_refactor_confidence = 0.7
+
+[checkup.imports]
+# Active import management for development
+remove_unused = true
+organize_imports = true
+check_circular = true
+check_missing = true
+analyze_dependencies = true
+detect_orphaned_modules = true
+
+# Development import formatting
+use_isort = true
+isort_profile = "black"
+force_single_line = false
+combine_star_imports = false
+remove_duplicate_imports = true
+
+[checkup.coverage]
+# Reasonable coverage requirements for development
+min_coverage = 75.0
+min_function_coverage = 70.0
+min_branch_coverage = 65.0
+min_line_coverage = 75.0
+
+# Basic test analysis
+check_test_quality = false  # Can be slow during development
+detect_redundant_tests = false
+suggest_missing_tests = true
+min_test_complexity = 2
+
+# Coverage integration
+use_pytest_cov = true
+coverage_report_format = "term"  # Terminal output for development
+generate_coverage_badge = false
+
+[checkup.structure]
+# Flexible structure for development
+max_nesting_depth = 3
+enforce_init_files = false  # Can be added later
+check_naming_conventions = true
+suggest_reorganization = true
+
+# Development-friendly organization
+group_related_files = true
+separate_tests = true
+organize_by_feature = false
+enforce_package_structure = false
+
+# Moderate directory management
+remove_empty_dirs = false  # Might be temporary during development
+max_files_per_directory = 20
+suggest_subdirectories = true
+max_single_file_size = 300  # lines
+
+[checkup.formatting]
+# Standard formatting for development
+use_black = true
+black_line_length = 88
+black_skip_string_normalization = false
+
+use_isort = true
+isort_profile = "black"
+isort_line_length = 88
+
+# Basic docstring formatting
+format_docstrings = false  # Can be disruptive during development
+docstring_style = "google"
+enforce_docstring_format = false
+
+# Standard formatting rules
+remove_trailing_whitespace = true
+ensure_newline_at_eof = true
+normalize_line_endings = true
+
+[checkup.reporting]
+# Development-appropriate reporting
+generate_html_report = true
+generate_json_report = false  # Not usually needed in development
+generate_markdown_report = true
+
+# Focused report content
+include_metrics = true
+include_trends = false  # Not usually needed during development
+include_suggestions = true
+include_examples = false
+
+# Simple HTML reports
+html_theme = "default"
+include_source_code = false
+syntax_highlighting = true
+interactive_charts = false
+
+output_directory = "dev-reports"
+report_filename_template = "dev-checkup-{timestamp}"
+compress_reports = false
+
+[checkup.safety]
+# Reasonable safety for development
+create_backup = true
+backup_directory = ".dev-backups"
+max_backups = 5
+compress_backups = false
+
+# Moderate change limits
+max_file_moves = 5
+max_file_deletions = 3
+max_changes_per_file = 15
+require_confirmation = false  # Trust developers
+
+# Basic validation
+enable_rollback = true
+validate_before_changes = false  # Can slow development
+run_tests_after_changes = false  # Manual testing during development
+check_syntax_after_changes = true
+auto_rollback_on_error = false
+
+[checkup.development]
+# Development-specific settings
+watch_mode = false  # Could be enabled for continuous checking
+auto_fix_on_save = false
+integration_with_ide = false
+show_progress_bar = true
+interactive_mode = false

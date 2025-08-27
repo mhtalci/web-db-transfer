@@ -1,0 +1,173 @@
+# Legacy Codebase Checkup Configuration
+# Gradual improvement approach for legacy codebases
+
+[checkup]
+# Start with basic analysis
+enable_quality_analysis = true
+enable_duplicate_detection = false  # Can be overwhelming initially
+enable_import_analysis = true
+enable_structure_analysis = false   # Address later
+enable_coverage_analysis = false    # Address after basic cleanup
+enable_config_validation = false
+enable_doc_validation = false
+
+# Very conservative cleanup
+auto_format = false  # Manual review first
+auto_fix_imports = false
+auto_organize_files = false
+auto_fix_quality = false
+
+# Conservative performance settings
+parallel_analysis = false  # Avoid overwhelming legacy systems
+max_workers = 1
+timeout = 900  # 15 minutes for large legacy codebases
+
+# Legacy-appropriate output
+verbose = true  # More information for legacy analysis
+quiet = false
+dry_run = true  # Default to dry run for safety
+
+# Legacy file filtering (often more exclusions needed)
+include_patterns = ["*.py"]
+exclude_patterns = [
+    "venv/*",
+    "__pycache__/*",
+    "*.pyc",
+    ".git/*",
+    "build/*",
+    "dist/*",
+    "node_modules/*",
+    "legacy/*",
+    "deprecated/*",
+    "old/*",
+    "backup/*",
+    "archive/*",
+    "vendor/*",
+    "third_party/*",
+    "migrations/*",
+    "*.bak",
+    "*_old.py",
+    "*_backup.py"
+]
+max_file_size = 5242880  # 5MB (legacy files can be large)
+
+[checkup.quality]
+# Very relaxed quality settings for legacy code
+max_complexity = 20  # Legacy code often complex
+max_nesting_depth = 6
+max_function_length = 100
+max_class_length = 500
+max_line_length = 120  # Legacy code often has long lines
+
+# No enforcement initially
+enforce_docstrings = false
+check_type_hints = false
+enforce_naming_conventions = false
+
+# Basic tools only
+use_flake8 = true
+use_mypy = false  # Often fails on legacy code
+use_bandit = false  # Can produce too many warnings
+
+# Relaxed code smell detection
+detect_code_smells = false  # Can be overwhelming
+smell_threshold = 0.3
+check_dead_code = false  # Legacy code often has "dead" code that's actually used
+check_unused_variables = false
+
+[checkup.imports]
+# Conservative import analysis
+remove_unused = false  # Manual review first
+organize_imports = false
+check_circular = true  # Important to identify
+check_missing = false  # Often false positives in legacy code
+analyze_dependencies = true
+detect_orphaned_modules = true
+
+# No automatic import changes
+use_isort = false
+
+[checkup.structure]
+# Very basic structure analysis
+max_nesting_depth = 5  # Legacy code often deeply nested
+enforce_init_files = false
+check_naming_conventions = false
+suggest_reorganization = false  # Too disruptive initially
+
+# Flexible organization
+group_related_files = false
+separate_tests = false  # Tests might be mixed in legacy code
+organize_by_feature = false
+enforce_package_structure = false
+
+# Conservative directory management
+remove_empty_dirs = false  # Might be intentional in legacy code
+max_files_per_directory = 50  # Legacy projects often have many files
+suggest_subdirectories = false
+max_single_file_size = 2000  # Legacy files can be very large
+
+[checkup.formatting]
+# No automatic formatting for legacy code
+use_black = false
+use_isort = false
+
+# No docstring formatting
+format_docstrings = false
+enforce_docstring_format = false
+
+# Basic cleanup only
+remove_trailing_whitespace = false  # Can cause large diffs
+ensure_newline_at_eof = false
+normalize_line_endings = false
+
+[checkup.reporting]
+# Comprehensive reporting for legacy analysis
+generate_html_report = true
+generate_json_report = true
+generate_markdown_report = true
+
+# Detailed content for legacy analysis
+include_metrics = true
+include_trends = false  # No baseline yet
+include_suggestions = true
+include_examples = true
+
+# Detailed HTML reports
+html_theme = "default"
+include_source_code = false  # Legacy code might be sensitive
+syntax_highlighting = true
+interactive_charts = true
+
+output_directory = "legacy-analysis"
+report_filename_template = "legacy-checkup-{timestamp}"
+compress_reports = false
+
+[checkup.safety]
+# Maximum safety for legacy code
+create_backup = true
+backup_directory = ".legacy-backups"
+max_backups = 20  # Keep many backups
+compress_backups = true
+
+# Extremely conservative change limits
+max_file_moves = 0  # No file moves initially
+max_file_deletions = 0  # No deletions
+max_changes_per_file = 0  # No automatic changes
+require_confirmation = true
+
+# Full validation and rollback
+enable_rollback = true
+validate_before_changes = true
+run_tests_after_changes = true  # If tests exist
+check_syntax_after_changes = true
+auto_rollback_on_error = true
+
+# Legacy-specific settings
+[checkup.legacy]
+# Custom section for legacy-specific options
+ignore_encoding_errors = true
+skip_binary_files = true
+handle_mixed_line_endings = true
+preserve_file_permissions = true
+create_improvement_plan = true
+prioritize_critical_issues = true

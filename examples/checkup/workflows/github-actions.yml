@@ -1,0 +1,147 @@
+# GitHub Actions Workflow for Codebase Checkup
+# This workflow runs checkup on pull requests and pushes
+
+name: Codebase Checkup
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  checkup:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for trend analysis
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install migration-assistant[checkup]
+        # Install project dependencies if needed
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        if [ -f pyproject.toml ]; then pip install -e .; fi
+    
+    - name: Run codebase checkup
+      run: |
+        migration-assistant checkup analyze \
+          --config examples/checkup/ci-checkup.toml \
+          --report-json \
+          --report-xml \
+          --output-dir checkup-reports
+    
+    - name: Upload checkup reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: checkup-reports
+        path: checkup-reports/
+        retention-days: 30
+    
+    - name: Comment PR with results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const path = 'checkup-reports/checkup-*.json';
+          
+          // Find the JSON report file
+          const { execSync } = require('child_process');
+          const reportFile = execSync(`ls ${path} | head -1`).toString().trim();
+          
+          if (fs.existsSync(reportFile)) {
+            const report = JSON.parse(fs.readFileSync(reportFile, 'utf8'));
+            
+            const comment = `## 🔍 Codebase Checkup Results
+            
+            **Summary:**
+            - Files analyzed: ${report.summary.total_files}
+            - Issues found: ${report.summary.issues_found}
+            - Quality score: ${report.metrics.quality_score}/100
+            
+            **Issues by category:**
+            - Quality issues: ${report.summary.quality_issues}
+            - Import issues: ${report.summary.import_issues}
+            - Coverage gaps: ${report.summary.coverage_gaps}
+            
+            ${report.summary.issues_found > 0 ? '⚠️ Please review and address the issues found.' : '✅ No issues found!'}
+            
+            Full reports are available in the workflow artifacts.`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          }
+    
+    - name: Fail on critical issues
+      run: |
+        # Check if there are critical issues that should fail the build
+        python -c "
+        import json
+        import sys
+        import glob
+        
+        report_files = glob.glob('checkup-reports/checkup-*.json')
+        if not report_files:
+            sys.exit(0)
+            
+        with open(report_files[0]) as f:
+            report = json.load(f)
+        
+        critical_issues = sum(1 for issue in report.get('quality_issues', []) 
+                             if issue.get('severity') == 'critical')
+        
+        if critical_issues > 0:
+            print(f'Found {critical_issues} critical issues')
+            sys.exit(1)
+        "
+
+  # Optional: Run checkup with formatting on main branch
+  format:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install migration-assistant[checkup]
+    
+    - name: Run formatting
+      run: |
+        migration-assistant checkup format \
+          --config examples/checkup/development-checkup.toml \
+          --backup
+    
+    - name: Commit formatting changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add -A
+        git diff --staged --quiet || git commit -m "Auto-format code with checkup"
+        git push

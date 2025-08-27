@@ -1,0 +1,203 @@
+# GitLab CI/CD Pipeline with Codebase Checkup
+# Save as .gitlab-ci.yml in your project root
+
+stages:
+  - test
+  - quality
+  - deploy
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+cache:
+  paths:
+    - .cache/pip/
+    - venv/
+
+before_script:
+  - python -V
+  - pip install virtualenv
+  - virtualenv venv
+  - source venv/bin/activate
+  - pip install --upgrade pip
+  - pip install migration-assistant[checkup]
+
+# Basic tests
+test:
+  stage: test
+  script:
+    - pip install -r requirements.txt
+    - python -m pytest tests/ --cov=src/ --cov-report=xml
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+    expire_in: 1 week
+  only:
+    - merge_requests
+    - main
+    - develop
+
+# Code quality analysis
+quality_analysis:
+  stage: quality
+  script:
+    - migration-assistant checkup analyze 
+        --config examples/checkup/ci-checkup.toml 
+        --report-json 
+        --report-xml 
+        --output-dir quality-reports
+  artifacts:
+    paths:
+      - quality-reports/
+    reports:
+      junit: quality-reports/checkup-*.xml
+    expire_in: 1 week
+  only:
+    - merge_requests
+    - main
+    - develop
+
+# Quality gate - fail on critical issues
+quality_gate:
+  stage: quality
+  dependencies:
+    - quality_analysis
+  script:
+    - |
+      python -c "
+      import json
+      import sys
+      import glob
+      
+      report_files = glob.glob('quality-reports/checkup-*.json')
+      if not report_files:
+          print('No quality report found')
+          sys.exit(1)
+          
+      with open(report_files[0]) as f:
+          report = json.load(f)
+      
+      critical_issues = sum(1 for issue in report.get('quality_issues', []) 
+                           if issue.get('severity') == 'critical')
+      
+      print(f'Quality score: {report[\"metrics\"][\"quality_score\"]}/100')
+      print(f'Critical issues: {critical_issues}')
+      
+      if critical_issues > 0:
+          print('Quality gate failed: Critical issues found')
+          sys.exit(1)
+      
+      if report['metrics']['quality_score'] < 70:
+          print('Quality gate failed: Quality score too low')
+          sys.exit(1)
+          
+      print('Quality gate passed')
+      "
+  only:
+    - merge_requests
+    - main
+
+# Format code on main branch
+format_code:
+  stage: quality
+  script:
+    - migration-assistant checkup format 
+        --config examples/checkup/development-checkup.toml 
+        --backup
+    - |
+      if [ -n "$(git status --porcelain)" ]; then
+        git config --global user.email "gitlab-ci@example.com"
+        git config --global user.name "GitLab CI"
+        git add -A
+        git commit -m "Auto-format code with checkup [skip ci]"
+        git push https://oauth2:${CI_PUSH_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git HEAD:${CI_COMMIT_REF_NAME}
+      fi
+  only:
+    - main
+  when: manual
+
+# Generate quality report for merge requests
+quality_report:
+  stage: quality
+  dependencies:
+    - quality_analysis
+  script:
+    - |
+      python -c "
+      import json
+      import glob
+      import os
+      
+      report_files = glob.glob('quality-reports/checkup-*.json')
+      if not report_files:
+          exit(0)
+          
+      with open(report_files[0]) as f:
+          report = json.load(f)
+      
+      # Create markdown report for MR
+      with open('quality_report.md', 'w') as f:
+          f.write('## 🔍 Code Quality Report\\n\\n')
+          f.write(f'**Quality Score:** {report[\"metrics\"][\"quality_score\"]}/100\\n\\n')
+          f.write(f'**Files Analyzed:** {report[\"summary\"][\"total_files\"]}\\n')
+          f.write(f'**Issues Found:** {report[\"summary\"][\"issues_found\"]}\\n\\n')
+          
+          if report['summary']['issues_found'] > 0:
+              f.write('### Issues by Category\\n\\n')
+              f.write(f'- Quality Issues: {report[\"summary\"].get(\"quality_issues\", 0)}\\n')
+              f.write(f'- Import Issues: {report[\"summary\"].get(\"import_issues\", 0)}\\n')
+              f.write(f'- Coverage Gaps: {report[\"summary\"].get(\"coverage_gaps\", 0)}\\n\\n')
+              
+              # List critical issues
+              critical_issues = [issue for issue in report.get('quality_issues', []) 
+                               if issue.get('severity') == 'critical']
+              if critical_issues:
+                  f.write('### Critical Issues\\n\\n')
+                  for issue in critical_issues[:5]:  # Limit to 5
+                      f.write(f'- **{issue[\"file\"]}:{issue[\"line\"]}** - {issue[\"message\"]}\\n')
+                  if len(critical_issues) > 5:
+                      f.write(f'- ... and {len(critical_issues) - 5} more\\n')
+          else:
+              f.write('✅ No issues found!\\n')
+      "
+    - cat quality_report.md
+  artifacts:
+    paths:
+      - quality_report.md
+    expire_in: 1 week
+  only:
+    - merge_requests
+
+# Scheduled quality check
+scheduled_quality:
+  stage: quality
+  script:
+    - migration-assistant checkup run 
+        --config examples/checkup/strict-checkup.toml 
+        --report-html 
+        --report-json
+    - echo "Quality report available at quality-reports/checkup-*.html"
+  artifacts:
+    paths:
+      - quality-reports/
+    expire_in: 1 month
+  only:
+    - schedules
+
+# Deploy quality reports to GitLab Pages
+pages:
+  stage: deploy
+  dependencies:
+    - scheduled_quality
+  script:
+    - mkdir public
+    - cp -r quality-reports/* public/ 2>/dev/null || true
+    - echo "Quality reports deployed to GitLab Pages"
+  artifacts:
+    paths:
+      - public
+  only:
+    - main
+  when: manual

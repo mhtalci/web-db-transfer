@@ -198,7 +198,15 @@ transfer:
 - [Getting Started Guide](docs/user-guide/getting-started.md)
 - [Advanced CMS Migration Guide](docs/user-guide/advanced-cms-migration.md)
 - [CLI Reference](docs/user-guide/cli-guide.md)
+- [Codebase Checkup Guide](docs/user-guide/codebase-checkup-guide.md)
 - [Migration Best Practices](docs/user-guide/best-practices.md)
+
+### **Codebase Checkup Documentation**
+- [📚 Documentation Index](docs/user-guide/checkup-documentation-index.md) - Complete documentation roadmap
+- [🚀 Installation Guide](docs/user-guide/checkup-installation.md) - Setup and installation
+- [💡 Usage Examples](docs/user-guide/checkup-usage-examples.md) - Practical examples
+- [⭐ Best Practices](docs/user-guide/checkup-best-practices.md) - Team workflows and standards
+- [❓ FAQ](docs/user-guide/checkup-faq.md) - Common questions and solutions
 
 ### **Technical Documentation**
 - [CMS Platform Support](docs/cms-platforms.md) - Comprehensive platform documentation

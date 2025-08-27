@@ -235,6 +235,13 @@ class CleanupResults:
     backup_created: bool = False
     backup_path: Optional[Path] = None
     
+    # Enhanced fields for comprehensive cleanup workflow
+    cleanup_plan: Dict[str, Any] = field(default_factory=dict)
+    pre_cleanup_warnings: List[str] = field(default_factory=list)
+    cleaner_results: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    validation_results: Optional[Any] = None  # ValidationResults type
+    rollback_operation_id: Optional[str] = None  # ID for rollback tracking
+    
     @property
     def total_changes(self) -> int:
         """Total number of changes made."""
@@ -330,6 +337,23 @@ class CheckupConfig:
     backup_dir: Path = Path("checkup_backups")
     dry_run: bool = False
     max_file_moves: int = 10
+    
+    # Error handling and logging settings
+    enable_error_recovery: bool = True
+    enable_circuit_breaker: bool = True
+    graceful_degradation: bool = True
+    max_retries: int = 3
+    retry_delay: float = 1.0
+    
+    # Logging configuration
+    log_file: Optional[Path] = None
+    error_log_file: Optional[Path] = None
+    performance_log_file: Optional[Path] = None
+    console_log_level: str = "INFO"
+    max_log_size: int = 50 * 1024 * 1024  # 50MB
+    log_backup_count: int = 10
+    session_id: Optional[str] = None
+    tenant_id: Optional[str] = None
     
     # Tool configurations
     black_config: Dict[str, Any] = field(default_factory=dict)

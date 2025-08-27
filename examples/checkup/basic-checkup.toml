@@ -1,0 +1,71 @@
+# Basic Codebase Checkup Configuration
+# This is a minimal configuration to get started with codebase checkup
+
+[checkup]
+# Enable basic analysis
+enable_quality_analysis = true
+enable_import_analysis = true
+enable_coverage_analysis = false  # Disable initially to reduce complexity
+
+# Enable basic cleanup
+auto_format = true
+auto_fix_imports = true
+
+# Safety settings
+create_backup = true
+dry_run = false
+require_confirmation = true
+
+# Basic file filtering
+include_patterns = ["*.py"]
+exclude_patterns = [
+    "venv/*",
+    "__pycache__/*",
+    "*.pyc",
+    ".git/*",
+    "build/*",
+    "dist/*"
+]
+
+[checkup.quality]
+# Relaxed quality settings for beginners
+max_complexity = 15
+max_line_length = 88
+enforce_docstrings = false
+check_type_hints = false
+
+# Use basic tools
+use_flake8 = true
+use_mypy = false  # Disable initially
+use_bandit = false
+
+[checkup.imports]
+# Basic import cleanup
+remove_unused = true
+organize_imports = true
+use_isort = true
+isort_profile = "black"
+
+[checkup.formatting]
+# Use black for formatting
+use_black = true
+black_line_length = 88
+
+# Use isort for imports
+use_isort = true
+isort_profile = "black"
+
+[checkup.reporting]
+# Generate basic reports
+generate_html_report = true
+generate_json_report = false
+generate_markdown_report = true
+output_directory = "checkup-reports"
+
+[checkup.safety]
+# Conservative safety settings
+create_backup = true
+backup_directory = ".checkup-backups"
+max_backups = 5
+max_file_moves = 5
+require_confirmation = true

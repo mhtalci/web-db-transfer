@@ -1,0 +1,40 @@
+# Dockerfile for Codebase Checkup
+# Containerized environment for running checkup
+
+FROM python:3.9-slim
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PIP_NO_CACHE_DIR=1
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN useradd --create-home --shell /bin/bash checkup
+USER checkup
+WORKDIR /home/checkup
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --user -r requirements.txt
+
+# Install checkup tool
+RUN pip install --user migration-assistant[checkup]
+
+# Add user's pip bin to PATH
+ENV PATH="/home/checkup/.local/bin:${PATH}"
+
+# Create directories for reports
+RUN mkdir -p /home/checkup/reports
+
+# Set working directory for mounted code
+WORKDIR /workspace
+
+# Default command
+CMD ["migration-assistant", "checkup", "--help"]

@@ -1,0 +1,100 @@
+# Docker Compose for Codebase Checkup
+# Run checkup in containerized environment
+
+version: '3.8'
+
+services:
+  # Main checkup service
+  checkup:
+    build:
+      context: .
+      dockerfile: Dockerfile.checkup
+    volumes:
+      - .:/workspace
+      - checkup-reports:/workspace/checkup-reports
+    working_dir: /workspace
+    environment:
+      - PYTHONPATH=/workspace
+    command: >
+      migration-assistant checkup run
+      --config examples/checkup/ci-checkup.toml
+      --report-html
+      --report-json
+      --output-dir checkup-reports
+
+  # Quick analysis service
+  checkup-quick:
+    build:
+      context: .
+      dockerfile: Dockerfile.checkup
+    volumes:
+      - .:/workspace
+    working_dir: /workspace
+    environment:
+      - PYTHONPATH=/workspace
+    command: >
+      migration-assistant checkup analyze
+      --config examples/checkup/development-checkup.toml
+      --quiet
+
+  # Format service
+  checkup-format:
+    build:
+      context: .
+      dockerfile: Dockerfile.checkup
+    volumes:
+      - .:/workspace
+    working_dir: /workspace
+    environment:
+      - PYTHONPATH=/workspace
+    command: >
+      migration-assistant checkup format
+      --config examples/checkup/development-checkup.toml
+      --backup
+
+  # Security scan service
+  checkup-security:
+    build:
+      context: .
+      dockerfile: Dockerfile.checkup
+    volumes:
+      - .:/workspace
+      - security-reports:/workspace/security-reports
+    working_dir: /workspace
+    environment:
+      - PYTHONPATH=/workspace
+    command: >
+      migration-assistant checkup analyze
+      --config examples/checkup/security-focused-checkup.toml
+      --report-json
+      --output-dir security-reports
+
+  # Batch processing service
+  checkup-batch:
+    build:
+      context: .
+      dockerfile: Dockerfile.checkup
+    volumes:
+      - .:/workspace
+      - ./projects:/projects  # Mount multiple projects
+      - batch-reports:/workspace/batch-reports
+    working_dir: /workspace
+    environment:
+      - PYTHONPATH=/workspace
+    command: >
+      python examples/checkup/scripts/demo_batch_processing.py
+
+  # Report server (serve HTML reports)
+  report-server:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - checkup-reports:/usr/share/nginx/html:ro
+    depends_on:
+      - checkup
+
+volumes:
+  checkup-reports:
+  security-reports:
+  batch-reports:

@@ -1,0 +1,202 @@
+# Production Codebase Checkup Configuration
+# High-reliability settings for production code analysis
+
+[checkup]
+# Comprehensive production analysis
+enable_quality_analysis = true
+enable_duplicate_detection = true
+enable_import_analysis = true
+enable_structure_analysis = true
+enable_coverage_analysis = true
+enable_config_validation = true
+enable_doc_validation = true
+
+# No automatic changes in production analysis
+auto_format = false
+auto_fix_imports = false
+auto_organize_files = false
+auto_fix_quality = false
+
+# Production-safe performance
+parallel_analysis = true
+max_workers = 1  # Conservative for production systems
+timeout = 1800  # 30 minutes for thorough analysis
+
+# Production logging
+verbose = true  # Detailed logging for production
+quiet = false
+dry_run = true  # Always dry run for production
+
+# Production file filtering
+include_patterns = ["*.py"]
+exclude_patterns = [
+    "venv/*",
+    "__pycache__/*",
+    "*.pyc",
+    ".git/*",
+    "build/*",
+    "dist/*",
+    "node_modules/*",
+    ".tox/*",
+    ".pytest_cache/*",
+    "*.egg-info/*",
+    ".coverage",
+    "htmlcov/*",
+    "logs/*",
+    "tmp/*",
+    "cache/*",
+    "uploads/*",
+    "media/*",
+    "static/*"
+]
+max_file_size = 2097152  # 2MB
+
+[checkup.quality]
+# Production quality standards
+max_complexity = 8  # Strict for production
+max_nesting_depth = 3
+max_function_length = 30
+max_class_length = 150
+max_line_length = 88
+
+# Production enforcement
+enforce_docstrings = true
+check_type_hints = true
+enforce_naming_conventions = true
+
+# Production tools
+use_flake8 = true
+use_mypy = true
+use_bandit = true  # Security is critical
+
+# Strict code smell detection
+detect_code_smells = true
+smell_threshold = 0.9
+check_dead_code = true
+check_unused_variables = true
+
+[checkup.duplicates]
+# Production duplicate detection
+similarity_threshold = 0.9  # Very strict
+min_duplicate_lines = 3
+min_duplicate_tokens = 25
+ignore_test_files = false
+suggest_refactoring = true
+min_refactor_confidence = 0.95
+
+[checkup.imports]
+# Production import analysis
+remove_unused = false  # No changes in production
+organize_imports = false
+check_circular = true
+check_missing = true
+analyze_dependencies = true
+detect_orphaned_modules = true
+
+# No automatic import changes
+use_isort = false
+
+[checkup.coverage]
+# Production coverage requirements
+min_coverage = 95.0  # Very high for production
+min_function_coverage = 90.0
+min_branch_coverage = 85.0
+min_line_coverage = 95.0
+
+# Comprehensive test analysis
+check_test_quality = true
+detect_redundant_tests = true
+suggest_missing_tests = true
+min_test_complexity = 3
+
+# Production coverage integration
+use_pytest_cov = true
+coverage_report_format = "xml"  # For production metrics
+generate_coverage_badge = true
+
+[checkup.structure]
+# Production structure requirements
+max_nesting_depth = 2  # Very strict
+enforce_init_files = true
+check_naming_conventions = true
+suggest_reorganization = false  # Too risky for production
+
+# Production organization
+group_related_files = true
+separate_tests = true
+organize_by_feature = true
+enforce_package_structure = true
+
+# Production directory management
+remove_empty_dirs = false  # No changes in production
+max_files_per_directory = 10  # Strict organization
+suggest_subdirectories = true
+max_single_file_size = 200  # lines
+
+[checkup.formatting]
+# No formatting changes in production
+use_black = false
+use_isort = false
+
+# No docstring changes
+format_docstrings = false
+enforce_docstring_format = false
+
+# No formatting changes
+remove_trailing_whitespace = false
+ensure_newline_at_eof = false
+normalize_line_endings = false
+
+[checkup.reporting]
+# Comprehensive production reporting
+generate_html_report = true
+generate_json_report = true
+generate_markdown_report = true
+generate_xml_report = true
+
+# Detailed production reports
+include_metrics = true
+include_trends = true
+include_suggestions = true
+include_examples = true
+
+# Production HTML reports
+html_theme = "default"
+include_source_code = false  # Security consideration
+syntax_highlighting = true
+interactive_charts = true
+
+output_directory = "production-reports"
+report_filename_template = "production-checkup-{timestamp}"
+compress_reports = true
+
+[checkup.safety]
+# Maximum production safety
+create_backup = false  # No changes made
+backup_directory = ".production-backups"
+max_backups = 0
+compress_backups = false
+
+# No changes allowed
+max_file_moves = 0
+max_file_deletions = 0
+max_changes_per_file = 0
+require_confirmation = true
+
+# Full validation
+enable_rollback = false  # No changes to rollback
+validate_before_changes = false
+run_tests_after_changes = false
+check_syntax_after_changes = false
+auto_rollback_on_error = false
+
+[checkup.production]
+# Production-specific settings
+security_scan_enabled = true
+performance_analysis = true
+memory_usage_check = true
+dependency_vulnerability_scan = true
+license_compliance_check = true
+audit_trail_generation = true
+compliance_reporting = true
+risk_assessment = true

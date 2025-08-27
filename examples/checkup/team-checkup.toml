@@ -1,0 +1,207 @@
+# Team Codebase Checkup Configuration
+# Standardized settings for team development environments
+
+[checkup]
+# Team-appropriate analysis
+enable_quality_analysis = true
+enable_duplicate_detection = true
+enable_import_analysis = true
+enable_structure_analysis = true
+enable_coverage_analysis = true
+enable_config_validation = true
+enable_doc_validation = true
+
+# Consistent team cleanup
+auto_format = true
+auto_fix_imports = true
+auto_organize_files = false  # Team decision required
+auto_fix_quality = false
+
+# Team performance settings
+parallel_analysis = true
+max_workers = 2  # Conservative for shared resources
+timeout = 450  # 7.5 minutes
+
+# Team-friendly output
+verbose = false
+quiet = false
+dry_run = false
+
+# Team file filtering
+include_patterns = ["*.py"]
+exclude_patterns = [
+    "venv/*",
+    "__pycache__/*",
+    "*.pyc",
+    ".git/*",
+    "build/*",
+    "dist/*",
+    "node_modules/*",
+    ".tox/*",
+    ".pytest_cache/*",
+    "*.egg-info/*",
+    ".coverage",
+    "htmlcov/*",
+    "personal/*",  # Personal development folders
+    "scratch/*",
+    "temp/*"
+]
+max_file_size = 1048576  # 1MB
+
+[checkup.quality]
+# Team-agreed quality standards
+max_complexity = 10
+max_nesting_depth = 4
+max_function_length = 40
+max_class_length = 180
+max_line_length = 88
+
+# Team enforcement standards
+enforce_docstrings = true  # Important for team collaboration
+check_type_hints = true
+enforce_naming_conventions = true
+
+# Team-approved tools
+use_flake8 = true
+use_mypy = true
+use_bandit = true
+
+# Team code smell detection
+detect_code_smells = true
+smell_threshold = 0.7
+check_dead_code = true
+check_unused_variables = true
+
+[checkup.duplicates]
+# Team duplicate detection standards
+similarity_threshold = 0.85
+min_duplicate_lines = 4
+min_duplicate_tokens = 40
+ignore_test_files = false  # Team should review test duplicates too
+suggest_refactoring = true
+min_refactor_confidence = 0.8
+
+[checkup.imports]
+# Team import standards
+remove_unused = true
+organize_imports = true
+check_circular = true
+check_missing = true
+analyze_dependencies = true
+detect_orphaned_modules = true
+
+# Team import formatting
+use_isort = true
+isort_profile = "black"
+force_single_line = false
+combine_star_imports = false
+remove_duplicate_imports = true
+
+[checkup.coverage]
+# Team coverage requirements
+min_coverage = 80.0
+min_function_coverage = 75.0
+min_branch_coverage = 70.0
+min_line_coverage = 80.0
+
+# Team test analysis
+check_test_quality = true
+detect_redundant_tests = true
+suggest_missing_tests = true
+min_test_complexity = 2
+
+# Team coverage integration
+use_pytest_cov = true
+coverage_report_format = "html"
+generate_coverage_badge = true
+
+[checkup.structure]
+# Team structure standards
+max_nesting_depth = 3
+enforce_init_files = true  # Important for team consistency
+check_naming_conventions = true
+suggest_reorganization = true
+
+# Team organization preferences
+group_related_files = true
+separate_tests = true
+organize_by_feature = true  # Team prefers feature organization
+enforce_package_structure = true
+
+# Team directory management
+remove_empty_dirs = true
+max_files_per_directory = 15
+suggest_subdirectories = true
+max_single_file_size = 250  # lines
+
+[checkup.formatting]
+# Team formatting standards
+use_black = true
+black_line_length = 88
+black_skip_string_normalization = false
+
+use_isort = true
+isort_profile = "black"
+isort_line_length = 88
+
+# Team docstring standards
+format_docstrings = true
+docstring_style = "google"  # Team standard
+enforce_docstring_format = true
+
+# Team formatting rules
+remove_trailing_whitespace = true
+ensure_newline_at_eof = true
+normalize_line_endings = true
+
+[checkup.reporting]
+# Team reporting requirements
+generate_html_report = true
+generate_json_report = true  # For team metrics tracking
+generate_markdown_report = true
+
+# Team report content
+include_metrics = true
+include_trends = true  # Track team progress
+include_suggestions = true
+include_examples = true
+
+# Team HTML reports
+html_theme = "default"
+include_source_code = false  # Privacy for team reports
+syntax_highlighting = true
+interactive_charts = true
+
+output_directory = "team-reports"
+report_filename_template = "team-checkup-{timestamp}"
+compress_reports = true  # Save space for team storage
+
+[checkup.safety]
+# Team safety standards
+create_backup = true
+backup_directory = ".team-backups"
+max_backups = 7  # One week of backups
+compress_backups = true
+
+# Team change limits
+max_file_moves = 8
+max_file_deletions = 5
+max_changes_per_file = 20
+require_confirmation = true  # Team approval for major changes
+
+# Team validation
+enable_rollback = true
+validate_before_changes = true
+run_tests_after_changes = true  # Important for team stability
+check_syntax_after_changes = true
+auto_rollback_on_error = true
+
+[checkup.team]
+# Team-specific settings
+enforce_consistent_style = true
+require_code_review_for_changes = false  # Handled by git workflow
+generate_team_metrics = true
+track_individual_contributions = false  # Focus on team metrics
+notify_on_quality_regression = false
+integration_with_slack = false
+integration_with_jira = false
